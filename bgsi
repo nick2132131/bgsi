@@ -185,15 +185,39 @@ local Slider = MainTab:CreateSlider({
    end,
 })
 
+local Input = MainTab:CreateInput({
+   Name = "Custom Walkspeed",
+   CurrentValue = "",
+   PlaceholderText = "Input",
+   RemoveTextAfterFocusLost = true,
+   Flag = "Input1",
+   Callback = function(Text)
+   game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Text)
+   end,
+})
+
 local Slider = MainTab:CreateSlider({
    Name = "FOV",
    Range = {0, 120},
    Increment = 1,
    Suffix = "FOV",
    CurrentValue = 70,
-   Flag = "example", 
+   Flag = "F0V", 
    Callback = function(Value)
        local FovNumber = (Value)
+       local Camera = workspace.CurrentCamera
+       Camera.FieldOfView = FovNumber
+   end,
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Custom FOV",
+   CurrentValue = "",
+   PlaceholderText = "Input",
+   RemoveTextAfterFocusLost = true,
+   Flag = "Input1",
+   Callback = function(Text)
+       local FovNumber = (Text)
        local Camera = workspace.CurrentCamera
        Camera.FieldOfView = FovNumber
    end,
