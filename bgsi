@@ -30,6 +30,6 @@ local Window = Rayfield:CreateWindow({
       FileName = "Key", 
       SaveKey = true, 
       GrabKeyFromSite = true,
-      Key = {"https://pastebin.com/VtszSUFa"}
+      Key = {"https://pastebin.com/raw/VtszSUFa"}
    }
 })
