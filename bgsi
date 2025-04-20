@@ -258,7 +258,7 @@ local Toggle = MainTab:CreateToggle({
 local AfkTab = Window:CreateTab("Afk", 4483362458)
 local AfkSection = AfkTab:CreateSection("Egg Hatching & more")
 
-local Toggle = Tab:CreateToggle({
+local Toggle = AfkTab:CreateToggle({
     Name = "Invisibility",
     CurrentValue = false,
     Flag = "InvisibleToggle",
