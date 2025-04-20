@@ -29,7 +29,7 @@ local Window = Rayfield:CreateWindow({
       Note = "Join our discord to get the key!", 
       FileName = "Key", 
       SaveKey = true, 
-      GrabKeyFromSite = false,
-      Key = {"ghstsc"}
+      GrabKeyFromSite = true,
+      Key = {"https://pastebin.com/VtszSUFa"}
    }
 })
