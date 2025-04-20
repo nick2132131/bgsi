@@ -375,7 +375,7 @@ local Button = TpTab:CreateButton({
 
 local Dropdown = TpTab:CreateDropdown({
    Name = "Egg TP",
-   Options = {"Common Egg","Spotted Egg", "Iceshard Egg", "Spikey Egg", "Magma Egg", "Crystal Egg", "Lunar Egg", "Void Egg", "Hell Egg", "Nightmare Egg", "Rainbow Egg", "Pastel Egg", "Bunny Egg"},
+   Options = {"Common Egg","Spotted Egg", "Iceshard Egg", "Spikey Egg", "Magma Egg", "Crystal Egg", "Lunar Egg", "Void Egg", "Hell Egg", "Nightmare Egg", "Rainbow Egg", "Infinity Egg", "Pastel Egg", "Bunny Egg"},
    CurrentOption = {"nil"},
    MultipleOptions = false,
    Flag = "Common Egg", 
@@ -383,7 +383,282 @@ local Dropdown = TpTab:CreateDropdown({
    local player = game.Players.LocalPlayer
         local character = player.Character or player.CharacterAdded:Wait()
 
-        local targetPosition = Vector3.new(10, 5, 20)
+        local targetPosition = Vector3.new(-80.87321472167969, 10.718570709228516, 5.961015224456787)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end,
+
+           Flag = "Spotted Egg", 
+   Callback = function(Options)
+              local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-91.77800750732422, 10.704692840576172, 12.3185453414917)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+
+                   Flag = "Iceshard Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-119.06742095947266, 11.404348373413086, 13.99923038482666)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+                           Flag = "Spikey Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-128.61102294921875, 11.079754829406738, 9.790822982788086)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+                                   Flag = "Magma Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-137.19537353515625, 11.106452941894531, 3.534250020980835)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+                                          Flag = "Crystal Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-144.17172241210938, 11.062068939208984, -4.989907741546631)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+                                                  Flag = "Lunar Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-148.48414611816406, 10.905187606811523, -15.26036548614502)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+                                                          Flag = "Void Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-150.27291870117188, 10.860991477966309, -26.020854949951172)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+                                                                  Flag = "Hell Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-149.32708740234375, 10.911077499389648, -36.887332916259766)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end, 
+                                                                          Flag = "Nightmare Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-146.00933837890625, 11.175324440002441, -46.99431610107422)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end,
+                                                                                  Flag = "Rainbow Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-140.05409240722656, 11.025880813598633, -56.05812454223633)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end,
+                                                                                          Flag = "Infinity Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-105.90811920166016, 11.993324279785156, -27.036849975585938)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end,
+                                                                                                  Flag = "Pastel Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-390.0277099609375, 12013.466796875, -63.399658203125)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                    primaryPart.Anchored = true
+                
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end,
+                                                                                                  Flag = "Bunny Egg", 
+   Callback = function(Options)
+                          local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-403.6309509277344, 12013.533203125, -64.58978271484375)
 
         local function teleportAndAnchorCharacter()
 
@@ -438,7 +713,7 @@ local LocalPlayer = Players.LocalPlayer
 local Input = TpTab:CreateInput({
    Name = "Tp To User",
    CurrentValue = "",
-   PlaceholderText = "-Username-",
+   PlaceholderText = "Username",
    RemoveTextAfterFocusLost = false,
    Flag = "Input1",
    Callback = function(Text)
@@ -492,5 +767,3 @@ local button = TpTab:CreateButton({
        end
    end,
 })
-
-
