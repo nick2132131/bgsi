@@ -33,7 +33,7 @@ local MainSection = MainTab:CreateSection("Local")
 
 Rayfield:Notify({
    Title = "BGSI Gui executed.",
-   Content = "Loaded!",
+   Content = "Version 0.15 Loaded!",
    Duration = 5,
    Image = 4483362458,
 })
@@ -399,9 +399,9 @@ local Dropdown = TpTab:CreateDropdown({
 
         teleportAndAnchorCharacter()
    end,
-
+    
            Flag = "Spotted Egg", 
-   Callback = function(Options)
+           Callback = function(Options)
               local player = game.Players.LocalPlayer
         local character = player.Character or player.CharacterAdded:Wait()
 
@@ -527,7 +527,8 @@ local Dropdown = TpTab:CreateDropdown({
 
         teleportAndAnchorCharacter()
    end, 
-                                                          Flag = "Void Egg", 
+    
+ Flag = "Void Egg",
    Callback = function(Options)
                           local player = game.Players.LocalPlayer
         local character = player.Character or player.CharacterAdded:Wait()
@@ -547,7 +548,8 @@ local Dropdown = TpTab:CreateDropdown({
         end
 
         teleportAndAnchorCharacter()
-   end, 
+   end,
+    
                                                                   Flag = "Hell Egg", 
    Callback = function(Options)
                           local player = game.Players.LocalPlayer
