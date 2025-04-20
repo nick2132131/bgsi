@@ -22,7 +22,7 @@ local Window = Rayfield:CreateWindow({
       RememberJoins = true 
    },
 
-   KeySystem = false, 
+   KeySystem = true, 
    KeySettings = {
       Title = "BGSI",
       Subtitle = "Key System",
@@ -32,4 +32,11 @@ local Window = Rayfield:CreateWindow({
       GrabKeyFromSite = true,
       Key = {"https://pastebin.com/raw/VtszSUFa"}
    }
+})
+
+local Button = Tab:CreateButton({
+   Name = "Hatch Egg",
+   Callback = function()
+   print("test")
+   end,
 })
