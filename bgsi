@@ -774,24 +774,5 @@ local OTap = Window:CreateTab("Other", 4483362458)
 local OSection = OTap:CreateSection("Others")
 
 local Button = OTap:CreateButton({
-   Name = "MadeBy",
-   Callback = function()
-   game.Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-                            
-        character:WaitForChild("Head")
+   Name = "COMING SOON",
 
-        local bubbleChat = character:FindFirstChild("BubbleChat")
-        if not bubbleChat then
-            bubbleChat = Instance.new("BubbleChat")
-            bubbleChat.Parent = character
-        end
-
-        bubbleChat.BubbleText = "Script made by n._2222"
-
-        bubbleChat:EmitBubble()
-    end)
-end)
-
-   end,
-})
