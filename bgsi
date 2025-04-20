@@ -428,3 +428,69 @@ local Button = TpTab:CreateButton({
         end
     end,
 })
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Input = TpTab:CreateInput({
+   Name = "Tp To User",
+   CurrentValue = "",
+   PlaceholderText = "-Username-",
+   RemoveTextAfterFocusLost = false,
+   Flag = "Input1",
+   Callback = function(Text)
+
+       if Text and Text ~= "" then
+           local targetPlayer = Players:FindFirstChild(Text)
+           if targetPlayer then
+
+               LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+
+               if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                   LocalPlayer.Character.HumanoidRootPart.Anchored = true
+
+                   task.delay(7.5, function()
+                       if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                           LocalPlayer.Character.HumanoidRootPart.Anchored = false
+                       end
+                   end)
+               end
+           else
+               print("Player not found!")
+           end
+       end
+   end,
+})
+
+local button = Tab:CreateButton({
+   Name = "Teleport to Player",
+   Callback = function()
+       local username = Input:GetValue() 
+       if username and username ~= "" then
+           local targetPlayer = Players:FindFirstChild(username)
+           if targetPlayer then
+
+               LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+
+               if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                   LocalPlayer.Character.HumanoidRootPart.Anchored = true
+
+                   task.delay(7.5, function() 
+                       if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                           LocalPlayer.Character.HumanoidRootPart.Anchored = false
+                       end
+                   end)
+               end
+           else
+               print("Player not found!")
+           end
+       else
+           print("Please enter a username.")
+       end
+   end,
+})
+
+
