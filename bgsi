@@ -24,12 +24,12 @@ local Window = Rayfield:CreateWindow({
 
    KeySystem = true, 
    KeySettings = {
-      Title = "BGSI Key",
+      Title = "BGSI",
       Subtitle = "Key System",
       Note = "Join our discord to get the key!", 
       FileName = "Key", 
       SaveKey = true, 
-      GrabKeyFromSite = true,
-      Key = {"https://pastebin.com/VtszSUFa"}
+      GrabKeyFromSite = false,
+      Key = {"ghstsc"}
    }
 })
