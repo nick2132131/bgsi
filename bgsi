@@ -18,7 +18,7 @@ local Window = Rayfield:CreateWindow({
 
    KeySystem = true, 
    KeySettings = {
-      Title = "🟣 Bubble Gum Simulator INFINITY | Key",
+      Title = "🟣 Bubble Gum Simulator INFINITY Gui | Key",
       Subtitle = "Key System",
       Note = ".gg/Qm9Fvvc4cm", 
       FileName = "BGSI Key", 
@@ -254,33 +254,6 @@ local Toggle = MainTab:CreateToggle({
         toggleNoclip()
     end,
 })
-
-local Player = game.Players.LocalPlayer
-local UIS = game:GetService("UserInputService")
-Player.CharacterAdded:Wait()
-local hrp = Player.Character:WaitForChild("HumanoidRootPart")
-local RunService = game:GetService("RunService")
-local KeyFlags = {
-P = false
-}
-
-function move(delta)
-	Player.Character:WaitForChild("HumanoidRootPart").CFrame = CFrame.new(Vector3.new(0, 10*delta, 0))
-end
-
-UIS.InputBegan:Connect(function(input, gameProcessedEvent)
-	if gameProcessedEvent then return end
-
-	if input.UserInputType == Enum.UserInputType.Keyboard then
-		if input.KeyCode == Enum.KeyCode.P then
-			move(1)
-		end
-	end
-end)
-
-RunService.RenderStepped:Connect(function(delta)
-
-    end)
 
 local AfkTab = Window:CreateTab("Afk", 4483362458)
 local AfkSection = AfkTab:CreateSection("Egg Hatching & more")
