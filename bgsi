@@ -1,30 +1,30 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🟣 BGSI Gui",
-   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-   LoadingTitle = "Bubble Gum Simulator INFINITY Gui",
+   Name = "🟣 Bubble Gum Simulator INFINITY Gui",
+   Icon = 0,
+   LoadingTitle = "🟣 Bubble Gum Simulator INFINITY",
    LoadingSubtitle = "by n._2222",
-   Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+   Theme = "Default",
 
    DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+   DisableBuildWarnings = false,
 
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = nil, -- Create a custom folder for your hub/game
+      FolderName = nil,
       FileName = "Big Hub"
    },
 
-   KeySystem = true, -- Set this to true to use our key system
+   KeySystem = true, 
    KeySettings = {
-      Title = "BGSI | Key",
+      Title = "🟣 Bubble Gum Simulator INFINITY | Key",
       Subtitle = "Key System",
-      Note = ".gg/Qm9Fvvc4cm", -- Use this to tell the user how to get a key
-      FileName = "BGSI Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = false, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = true, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"https://pastebin.com/raw/VtszSUFa"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+      Note = ".gg/Qm9Fvvc4cm", 
+      FileName = "BGSI Key", 
+      SaveKey = false, 
+      GrabKeyFromSite = true, 
+      Key = {"https://pastebin.com/raw/VtszSUFa"} 
    }
 })
 
@@ -32,7 +32,7 @@ local MainTab = Window:CreateTab("Local", nil) -- Title, Image
 local MainSection = MainTab:CreateSection("Test")
 
 Rayfield:Notify({
-   Title = "BGSI Gui executed",
+   Title = "BGSI Gui executed.",
    Content = "Loaded!",
    Duration = 5,
    Image = nil,
@@ -54,19 +54,16 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local MaxDistance = 400.5 -- Range in studs for nametags to show
- 
--- Toggle variable
+
 local NametagsEnabled = true 
- 
--- Function to create a nametag for a player
+
 local function CreateNametag(Player)
-    if Player == LocalPlayer then return end -- Skip local player
+    if Player == LocalPlayer then return end
  
     local function SetupNametag(Character)
         local Head = Character:FindFirstChild("Head")
-        if not Head then return end -- If no head, exit
+        if not Head then return end
  
-        -- Remove existing nametag if it exists
         local OldNametag = Head:FindFirstChild("Nametag")
         if OldNametag then
             OldNametag:Destroy()
@@ -82,16 +79,15 @@ local function CreateNametag(Player)
         local TextLabel = Instance.new("TextLabel")
         TextLabel.Size = UDim2.new(1, 0, 1, 0)
         TextLabel.Text = Player.Name
-        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White color
+        TextLabel.TextColor3 = Color3.fromRGB(105, 225, 4)
         TextLabel.BackgroundTransparency = 1
-        TextLabel.TextStrokeTransparency = 0.75 -- Outline for better visibility
+        TextLabel.TextStrokeTransparency = 0.75
         TextLabel.Font = Enum.Font.Code
         TextLabel.TextScaled = true
         TextLabel.Parent = BillboardGui
  
         BillboardGui.Parent = Head
  
-        -- Function to update visibility based on distance and toggle
         local function UpdateVisibility()
             if NametagsEnabled and Player.Character and Player.Character:FindFirstChild("Head") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head") then
                 local Distance = (Player.Character.Head.Position - LocalPlayer.Character.Head.Position).Magnitude
@@ -107,7 +103,6 @@ local function CreateNametag(Player)
             if Player.Character and Player.Character:FindFirstChild("Head") then
                 UpdateVisibility()
             else
-                BillboardGui:Destroy() -- Clean up nametag when player dies
                 Connection:Disconnect()
             end
         end)
@@ -119,8 +114,7 @@ local function CreateNametag(Player)
     end
     Player.CharacterAdded:Connect(SetupNametag)
 end
- 
--- Function to apply ESP/Highlight to a player
+
 local function ApplyHighlight(Player)
     if Player == LocalPlayer then return end -- Skip local player
  
@@ -152,7 +146,6 @@ local function ApplyHighlight(Player)
         end
     end
  
-    -- Apply highlight on spawn and respawn
     if Player.Character then
         SetupHighlight(Player.Character)
     end
@@ -161,7 +154,7 @@ end
  
 -- Function to toggle nametags
 local function ToggleNametags()
-    NametagsEnabled = not NametagsEnabled -- Flip the toggle state
+    NametagsEnabled = not NametagsEnabled 
     print("Nametags Enabled:", NametagsEnabled)
  
     for _, Player in pairs(Players:GetPlayers()) do
@@ -174,20 +167,17 @@ local function ToggleNametags()
     end
 end
  
--- Bind the toggle function to the "[" key
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if not GameProcessed and Input.KeyCode == Enum.KeyCode.LeftBracket then
         ToggleNametags()
     end
 end)
  
--- Apply ESP and Nametags to all current players
 for _, Player in pairs(Players:GetPlayers()) do
     CreateNametag(Player)
     ApplyHighlight(Player)
 end
  
--- Apply ESP and Nametags to players who join later
 Players.PlayerAdded:Connect(function(Player)
     CreateNametag(Player)
     ApplyHighlight(Player)
@@ -197,13 +187,13 @@ end)
 
 local Slider = MainTab:CreateSlider({
    Name = "Walkspeed",
-   Range = {0, 42},
+   Range = {0, 41},
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
-   Flag = "example", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "example", 
    Callback = function(Value)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Value)
+   game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Value)
    end,
 })
 
@@ -213,10 +203,22 @@ local Slider = MainTab:CreateSlider({
    Increment = 1,
    Suffix = "FOV",
    CurrentValue = 16,
-   Flag = "example", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "example", 
    Callback = function(Value)
-       local FovNumber = (Value) --Enter your FOV number here
+       local FovNumber = (Value)
        local Camera = workspace.CurrentCamera
        Camera.FieldOfView = FovNumber
+   end,
+})
+
+local Slider = MainTab:CreateSlider({
+   Name = "Jumppower",
+   Range = {0, 1000},
+   Increment = 1,
+   Suffix = "Power",
+   CurrentValue = 50,
+   Flag = "example", 
+   Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.Jumppower = (Value)
    end,
 })
