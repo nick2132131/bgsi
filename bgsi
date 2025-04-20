@@ -465,7 +465,7 @@ local Input = TpTab:CreateInput({
    end,
 })
 
-local button = Tab:CreateButton({
+local button = TpTab:CreateButton({
    Name = "Teleport to Player",
    Callback = function()
        local username = Input:GetValue() 
