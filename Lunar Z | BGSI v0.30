@@ -1,0 +1,576 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Lunar Z | BGSI",
+   Icon = 0,
+   LoadingTitle = "Lunar Z | BGSI",
+   LoadingSubtitle = "by n._2222",
+   Theme = "DarkBlue",
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Big Hub"
+   },
+
+   KeySystem = true, 
+   KeySettings = {
+      Title = "Lunar Z | Key",
+      Subtitle = "Key System",
+      Note = ".gg/Qm9Fvvc4cm", 
+      FileName = "LZ Key", 
+      SaveKey = false, 
+      GrabKeyFromSite = true, 
+      Key = {"https://pastebin.com/raw/VtszSUFa", "e"} 
+   }
+})
+
+local MainTab = Window:CreateTab("Home", 4483362458)
+local MainSection = MainTab:CreateSection("Local")
+
+Rayfield:Notify({
+   Title = "Lunar Z executed.",
+   Content = "Loaded!",
+   Duration = 5,
+   Image = 4483362458,
+})
+
+local Toggle = MainTab:CreateToggle({
+   Name = "Player ESP",
+   Callback = function()
+      local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local MaxDistance = 400.5
+
+local NametagsEnabled = true 
+
+local function CreateNametag(Player)
+    if Player == LocalPlayer then return end
+ 
+    local function SetupNametag(Character)
+        local Head = Character:FindFirstChild("Head")
+        if not Head then return end
+ 
+        local OldNametag = Head:FindFirstChild("Nametag")
+        if OldNametag then
+            OldNametag:Destroy()
+        end
+ 
+        local BillboardGui = Instance.new("BillboardGui")
+        BillboardGui.Name = "Nametag"
+        BillboardGui.Adornee = Head
+        BillboardGui.Size = UDim2.new(0, 75, 0, 150)
+        BillboardGui.StudsOffset = Vector3.new(0, 2, 0)
+        BillboardGui.AlwaysOnTop = true
+ 
+        local TextLabel = Instance.new("TextLabel")
+        TextLabel.Size = UDim2.new(1, 0, 1, 0)
+        TextLabel.Text = Player.Name
+        TextLabel.TextColor3 = Color3.fromRGB(105, 225, 4)
+        TextLabel.BackgroundTransparency = 1
+        TextLabel.TextStrokeTransparency = 0.75
+        TextLabel.Font = Enum.Font.Code
+        TextLabel.TextScaled = true
+        TextLabel.Parent = BillboardGui
+ 
+        BillboardGui.Parent = Head
+ 
+        local function UpdateVisibility()
+            if NametagsEnabled and Player.Character and Player.Character:FindFirstChild("Head") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head") then
+                local Distance = (Player.Character.Head.Position - LocalPlayer.Character.Head.Position).Magnitude
+                BillboardGui.Enabled = (Distance <= MaxDistance)
+            else
+                BillboardGui.Enabled = false
+            end
+        end
+ 
+        local Connection
+        Connection = RunService.Heartbeat:Connect(function()
+            if Player.Character and Player.Character:FindFirstChild("Head") then
+                UpdateVisibility()
+            else
+                Connection:Disconnect()
+            end
+        end)
+    end
+
+    if Player.Character then
+        SetupNametag(Player.Character)
+    end
+    Player.CharacterAdded:Connect(SetupNametag)
+end
+
+local function ApplyHighlight(Player)
+    if Player == LocalPlayer then return end 
+ 
+    local function SetupHighlight(Character)
+
+        for _, v in pairs(Character:GetChildren()) do
+            if v:IsA("Highlight") then
+                v:Destroy()
+            end
+        end
+ 
+        local Highlighter = Instance.new("Highlight")
+        Highlighter.Parent = Character
+ 
+        local function UpdateFillColor()
+            local DefaultColor = Color3.fromRGB(255, 48, 51) 
+            Highlighter.FillColor = Player.TeamColor and Player.TeamColor.Color or DefaultColor
+        end
+ 
+        UpdateFillColor()
+        Player:GetPropertyChangedSignal("TeamColor"):Connect(UpdateFillColor)
+
+        local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+        if Humanoid then
+            Humanoid.Died:Connect(function()
+                Highlighter:Destroy()
+            end)
+        end
+    end
+ 
+    if Player.Character then
+        SetupHighlight(Player.Character)
+    end
+    Player.CharacterAdded:Connect(SetupHighlight)
+end
+
+local function ToggleNametags()
+    NametagsEnabled = not NametagsEnabled 
+    print("Nametags Enabled:", NametagsEnabled)
+ 
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer and Player.Character and Player.Character:FindFirstChild("Head") then
+            local Nametag = Player.Character.Head:FindFirstChild("Nametag")
+            if Nametag then
+                Nametag.Enabled = NametagsEnabled
+            end
+        end
+    end
+end
+ 
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if not GameProcessed and Input.KeyCode == Enum.KeyCode.LeftBracket then
+        ToggleNametags()
+    end
+end)
+ 
+for _, Player in pairs(Players:GetPlayers()) do
+    CreateNametag(Player)
+    ApplyHighlight(Player)
+end
+ 
+Players.PlayerAdded:Connect(function(Player)
+    CreateNametag(Player)
+    ApplyHighlight(Player)
+end)
+   end,
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+local noclipConnection = nil
+local noclipEnabled = false
+
+local Toggle = MainTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(Value)
+        noclipEnabled = Value
+
+        if Value then
+            noclipConnection = RunService.Stepped:Connect(function()
+                local char = LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
+
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end,
+})
+
+
+local InfiniteJumpEnabled = false 
+
+local Toggle = MainTab:CreateToggle({
+   Name = "Infinite Jump",
+   CurrentValue = false,
+   Flag = "InfiniteJumpToggle", 
+   Callback = function(Value)
+       InfiniteJumpEnabled = Value 
+       if InfiniteJumpEnabled then
+
+           game:GetService("UserInputService").JumpRequest:Connect(function()
+               if InfiniteJumpEnabled then
+                   local player = game.Players.LocalPlayer
+                   if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                       player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                   end
+               end
+           end)
+           print("Infinite Jump Enabled")
+       else
+           print("Infinite Jump Disabled")
+       end
+   end,
+})
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    InfiniteJumpEnabled = false 
+end)
+
+local Toggle = MainTab:CreateToggle({
+    Name = "Invisibility",
+    CurrentValue = false,
+    Flag = "InvisibleToggle",
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        if character then
+            for _, child in pairs(character:GetDescendants()) do
+                if child:IsA("BasePart") then
+
+                    child.Transparency = Value and 1 or 0
+                    child.LocalTransparencyModifier = 0 
+
+                    child.CastShadow = not Value
+                end
+
+                if child:IsA("Accessory") and child:FindFirstChild("Handle") then
+                    child.Handle.Transparency = Value and 1 or 0
+                    child.Handle.LocalTransparencyModifier = 0
+                end
+
+                if child:IsA("Decal") and child.Name == "face" then
+                    child.Transparency = Value and 1 or 0
+                end
+            end
+        end
+    end,
+})
+
+
+local Slider = MainTab:CreateSlider({
+   Name = "Walkspeed",
+   Range = {0, 42},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "example", 
+   Callback = function(Value)
+   game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Value)
+   end,
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Custom Walkspeed",
+   CurrentValue = "",
+   PlaceholderText = "Input",
+   RemoveTextAfterFocusLost = true,
+   Flag = "Input1",
+   Callback = function(Text)
+   game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Text)
+   end,
+})
+
+local Slider = MainTab:CreateSlider({
+   Name = "FOV",
+   Range = {0, 120},
+   Increment = 1,
+   Suffix = "FOV",
+   CurrentValue = 70,
+   Flag = "F0V", 
+   Callback = function(Value)
+       local FovNumber = (Value)
+       local Camera = workspace.CurrentCamera
+       Camera.FieldOfView = FovNumber
+   end,
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Custom FOV",
+   CurrentValue = "",
+   PlaceholderText = "Input",
+   RemoveTextAfterFocusLost = true,
+   Flag = "Input1",
+   Callback = function(Text)
+       local FovNumber = (Text)
+       local Camera = workspace.CurrentCamera
+       Camera.FieldOfView = FovNumber
+   end,
+})
+
+local Slider = MainTab:CreateSlider({
+   Name = "JumpPower",
+   Range = {50, 9999},
+   Increment = 1,
+   Suffix = "Power",
+   CurrentValue = 50,
+   Flag = "example", 
+   Callback = function(Value)
+   game.Players.LocalPlayer.Character.Humanoid.JumpPower = (Value)
+   end,
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Custom JumpPower",
+   CurrentValue = (Value),
+   PlaceholderText = "Input",
+   RemoveTextAfterFocusLost = true,
+   Flag = "Input1",
+   Callback = function(Text)
+   game.Players.LocalPlayer.Character.Humanoid.JumpPower = (Text)
+   end,
+})
+
+local Button = MainTab:CreateButton({
+    Name = "Reset",
+    Callback = function()
+
+        local player = game.Players.LocalPlayer
+
+        if player.Character then
+            player.Character:BreakJoints()
+        end
+    end,
+})
+
+local AfkTab = Window:CreateTab("Afk", 4483362458)
+local AfkSection = AfkTab:CreateSection("Egg Hatching & more")
+
+local TpTab = Window:CreateTab("Tp", 4483362458)
+
+local TpSection = TpTab:CreateSection("Tp")
+
+local teleportLocations = {
+    ["Common Egg"] = Vector3.new(-80.8732, 10.7186, 5.9610),
+    ["Spotted Egg"] = Vector3.new(-91.7780, 10.7047, 12.3185),
+    ["Iceshard Egg"] = Vector3.new(-119.0674, 11.4043, 13.9992),
+    ["Spikey Egg"] = Vector3.new(-128.6110, 11.0798, 9.7908),
+    ["Magma Egg"] = Vector3.new(-137.1954, 11.1065, 3.5343),
+    ["Crystal Egg"] = Vector3.new(-144.1717, 11.0621, -4.9899),
+    ["Lunar Egg"] = Vector3.new(-148.4841, 10.9052, -15.2604),
+    ["Void Egg"] = Vector3.new(-150.2729, 10.8610, -26.0209),
+    ["Hell Egg"] = Vector3.new(-149.3271, 10.9111, -36.8873),
+    ["Nightmare Egg"] = Vector3.new(-146.0093, 11.1753, -46.9943),
+    ["Rainbow Egg"] = Vector3.new(-140.0541, 11.0259, -56.0581),
+    ["Infinity Egg"] = Vector3.new(-105.9081, 11.9933, -27.0368),
+    ["Pastel Egg"] = Vector3.new(-390.0277, 12013.4668, -63.3997),
+    ["Bunny Egg"] = Vector3.new(-403.6310, 12013.5332, -64.5898),
+}
+
+local Dropdown = TpTab:CreateDropdown({
+    Name = "Egg TP",
+    Options = {
+        "Common Egg","Spotted Egg", "Iceshard Egg", "Spikey Egg", "Magma Egg",
+        "Crystal Egg", "Lunar Egg", "Void Egg", "Hell Egg", "Nightmare Egg",
+        "Rainbow Egg", "Infinity Egg", "Pastel Egg", "Bunny Egg"
+    },
+    CurrentOption = "nil",
+    MultipleOptions = false,
+    Flag = "Egg TP",
+ Callback = function(selectedOptions)
+        local selectedOption = selectedOptions[1]
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local targetPosition = teleportLocations[selectedOption]
+
+        if targetPosition then
+            character:PivotTo(CFrame.new(targetPosition))
+
+            local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+            if primaryPart then
+                primaryPart.Anchored = true
+            end
+        else
+            warn("Teleport location not found for: " .. tostring(selectedOption))
+        end
+    end,
+})
+
+local Button = TpTab:CreateButton({
+   Name = "Sell",
+   Callback = function()
+            
+        local player = game.Players.LocalPlayer
+        
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-70.81653594970703, 6865.20751953125, 116.49819946289062)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                   primaryPart.Anchored = true
+            
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end,
+})
+
+local Button = TpTab:CreateButton({
+   Name = "Shop",
+   Callback = function()
+            
+        local player = game.Players.LocalPlayer
+        
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(30.72113800048828, 13.95518970489502, -117.11205291748047)
+
+        local function teleportAndAnchorCharacter()
+
+                character:PivotTo(CFrame.new(targetPosition))
+
+                local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+                if primaryPart then
+                   primaryPart.Anchored = true
+            
+            end
+        end
+
+        teleportAndAnchorCharacter()
+   end,
+})
+
+local Button = TpTab:CreateButton({
+    Name = "Unanchor",
+    Callback = function()
+
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local primaryPart = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+
+        if primaryPart then
+            primaryPart.Anchored = false
+                
+        end
+    end,
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Input = TpTab:CreateInput({
+    Name = "Tp To User",
+    CurrentValue = "",
+    PlaceholderText = "Username",
+    RemoveTextAfterFocusLost = true,
+    Flag = "TpToUserInput",
+    Callback = function(Text)
+        local username = string.lower(Text)
+
+        if username and username ~= "" then
+
+            local targetPlayer = nil
+            for _, player in ipairs(Players:GetPlayers()) do
+                if string.lower(player.Name) == username then
+                    targetPlayer = player
+                    break
+                end
+            end
+
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if root then
+
+                    root.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                    root.Anchored = true
+
+                    task.delay(7.5, function()
+                        if root then
+                            local savedCFrame = root.CFrame
+                            root.Anchored = false
+                            root.CFrame = savedCFrame
+                        end
+                    end)
+                end
+            else
+                warn("Player not found or not loaded!")
+            end
+        else
+            warn("Please enter a username.")
+        end
+    end,
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Input = TpTab:CreateInput({
+    Name = "Bring Player",
+    CurrentValue = "",
+    PlaceholderText = "Enter Username",
+    RemoveTextAfterFocusLost = true,
+    Flag = "BringInput",
+    Callback = function(text)
+        local username = string.lower(text)
+        local targetPlayer = nil
+
+        for _, player in ipairs(Players:GetPlayers()) do
+            if string.lower(player.Name) == username and player ~= LocalPlayer then
+                targetPlayer = player
+                break
+            end
+        end
+
+        if targetPlayer and targetPlayer.Character and LocalPlayer.Character then
+            local myHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+            if myHRP and targetHRP then
+
+                for i = 1, 50 do
+                    targetHRP.CFrame = myHRP.CFrame + Vector3.new(0, 2, 0)
+                    task.wait()
+                end
+            end
+        else
+            warn("Player not found or not fully loaded.")
+        end
+    end,
+})
+
+
+
+local OTab = Window:CreateTab("Other")
+local OSection = OTab:CreateSection("Other")
