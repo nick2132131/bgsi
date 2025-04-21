@@ -769,3 +769,35 @@ local button = TpTab:CreateButton({
        end
    end,
 })
+
+local OTab = Window:CreateTab("Other")
+local OSection = OTab:CreateSection("Other")
+
+local InfiniteJumpEnabled = false 
+
+local Toggle = OTab:CreateToggle({
+   Name = "Infinite Jump",
+   CurrentValue = false,
+   Flag = "InfiniteJumpToggle", 
+   Callback = function(Value)
+       InfiniteJumpEnabled = Value 
+       if InfiniteJumpEnabled then
+
+           game:GetService("UserInputService").JumpRequest:Connect(function()
+               if InfiniteJumpEnabled then
+                   local player = game.Players.LocalPlayer
+                   if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                       player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                   end
+               end
+           end)
+           print("Infinite Jump Enabled")
+       else
+           print("Infinite Jump Disabled")
+       end
+   end,
+})
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    InfiniteJumpEnabled = false 
+end)
