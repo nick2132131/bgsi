@@ -5,7 +5,7 @@ local Window = Rayfield:CreateWindow({
    Icon = 0, 
    LoadingTitle = "Lunar Z | MM2",
    LoadingSubtitle = "by n._2222",
-   Theme = "DarkBlue", 
+   Theme = "AmberGlow", 
 
    DisableRayfieldPrompts = false,
    DisableBuildWarnings = false, 
