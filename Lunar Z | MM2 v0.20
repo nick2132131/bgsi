@@ -5,7 +5,7 @@ local Window = Rayfield:CreateWindow({
    Icon = 0, 
    LoadingTitle = "Lunar Z | MM2",
    LoadingSubtitle = "by n._2222",
-   Theme = "AmberGlow", 
+   Theme = "DarkBlue", 
 
    DisableRayfieldPrompts = false,
    DisableBuildWarnings = false, 
@@ -30,79 +30,88 @@ local Window = Rayfield:CreateWindow({
 local HTab = Window:CreateTab("Home", 0)
 local HSection = HTab:CreateSection("Local")
 
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local espEnabled = false
 local espBoxes = {}
 
--- Function to create ESP box
+-- 🧠 Role Detection
+local function GetRole(player)
+	if not player.Backpack then return "Innocent" end
+
+	local hasGun = player.Backpack:FindFirstChild("Gun") or (player.Character and player.Character:FindFirstChild("Gun"))
+	local hasKnife = player.Backpack:FindFirstChild("Knife") or (player.Character and player.Character:FindFirstChild("Knife"))
+
+	if hasGun then return "Sheriff" end
+	if hasKnife then return "Murderer" end
+	return "Innocent"
+end
+
+-- 🎯 Create Box ESP
 local function createESP(player, color)
-    if espBoxes[player] then
-        espBoxes[player].Adornee = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        espBoxes[player].Color3 = color
-        return
-    end
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
 
-    local box = Instance.new("BoxHandleAdornment")
-    box.Name = "ESPBox"
-    box.Adornee = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    box.Size = Vector3.new(4, 6, 1)
-    box.Color3 = color
-    box.AlwaysOnTop = true
-    box.ZIndex = 10
-    box.Transparency = 0.5
-    box.Parent = player.Character:FindFirstChild("HumanoidRootPart")
-    espBoxes[player] = box
+	if not espBoxes[player] then
+		local box = Instance.new("BoxHandleAdornment")
+		box.Name = "ESPBox"
+		box.Size = Vector3.new(4, 6, 1)
+		box.AlwaysOnTop = true
+		box.ZIndex = 10
+		box.Transparency = 0.5
+		box.Adornee = hrp
+		box.Color3 = color
+		box.Parent = hrp
+		espBoxes[player] = box
+	else
+		local box = espBoxes[player]
+		if box.Parent ~= hrp then
+			box.Parent = hrp
+		end
+		box.Adornee = hrp
+		box.Color3 = color
+	end
 end
 
--- Function to remove ESP
-local function removeESP(player)
-    if espBoxes[player] then
-        espBoxes[player]:Destroy()
-        espBoxes[player] = nil
-    end
-end
-
--- Update ESPs
+-- 🔁 Update ESP loop (no destroy if player dies)
 local function updateESP()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local role = player:FindFirstChild("Backpack"):FindFirstChild("Gun") and "Sheriff"
-                or player.Character:FindFirstChild("Knife") and "Murderer"
-                or "Innocent"
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= Players.LocalPlayer then
+			local role = GetRole(player)
+			local color = role == "Sheriff" and Color3.fromRGB(0, 0, 255)
+				or role == "Murderer" and Color3.fromRGB(255, 0, 0)
+				or Color3.fromRGB(0, 255, 0)
 
-            local color = role == "Sheriff" and Color3.fromRGB(0, 0, 255)
-                or role == "Murderer" and Color3.fromRGB(255, 0, 0)
-                or Color3.fromRGB(255, 255, 255)
-
-            createESP(player, color)
-        else
-            removeESP(player)
-        end
-    end
+			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				createESP(player, color)
+			end
+		end
+	end
 end
 
--- Toggle
+-- 🟢 Rayfield Toggle
 local Toggle = HTab:CreateToggle({
-    Name = "Role ESP",
-    CurrentValue = false,
-    Flag = "ESP_Toggle",
-    Callback = function(Value)
-        espEnabled = Value
+	Name = "Role ESP",
+	CurrentValue = false,
+	Flag = "ESP_Toggle",
+	Callback = function(Value)
+		espEnabled = Value
 
-        if Value then
-            RunService:BindToRenderStep("ESPUpdate", Enum.RenderPriority.Camera.Value + 1, updateESP)
-        else
-            RunService:UnbindFromRenderStep("ESPUpdate")
-            for _, v in pairs(espBoxes) do
-                v:Destroy()
-            end
-            espBoxes = {}
-        end
-    end,
+		if Value then
+			RunService:BindToRenderStep("ESPUpdate", Enum.RenderPriority.Camera.Value + 1, updateESP)
+		else
+			RunService:UnbindFromRenderStep("ESPUpdate")
+			for _, v in pairs(espBoxes) do
+				v:Destroy()
+			end
+			espBoxes = {}
+		end
+	end,
 })
+
+
 
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -166,6 +175,166 @@ HTab:CreateToggle({
 	end,
 })
 
+local ESP = {
+	Name = false
+}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local Drawings = {}
+local nameESPEnabled = false
+
+-- Get role
+local function GetRole(player)
+	if player.Backpack:FindFirstChild("Gun") or (player.Character and player.Character:FindFirstChild("Gun")) then
+		return "Sheriff"
+	elseif player.Backpack:FindFirstChild("Knife") or (player.Character and player.Character:FindFirstChild("Knife")) then
+		return "Murderer"
+	else
+		return "Innocent"
+	end
+end
+
+local RoleColors = {
+	Murderer = Color3.fromRGB(255, 0, 0),
+	Sheriff = Color3.fromRGB(0, 100, 255),
+	Innocent = Color3.fromRGB(0, 255, 0)
+}
+
+-- Toggle (Rayfield)
+HTab:CreateToggle({
+	Name = "Name ESP (MM2 Roles)",
+	CurrentValue = false,
+	Callback = function(Value)
+		nameESPEnabled = Value
+	end,
+})
+
+-- Main update loop
+RunService.RenderStepped:Connect(function()
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+			local head = player.Character.Head
+			local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+
+			-- Hide if not enabled or not on screen
+			if not nameESPEnabled or not onScreen or pos.Z < 0 then
+				if Drawings[player] and Drawings[player].Name then
+					Drawings[player].Name.Visible = false
+				end
+				continue
+			end
+
+			if not Drawings[player] then Drawings[player] = {} end
+			if not Drawings[player].Name then
+				local text = Drawing.new("Text")
+				text.Size = 14
+				text.Center = true
+				text.Outline = true
+				text.Font = 2
+				Drawings[player].Name = text
+			end
+
+			local role = GetRole(player)
+			local color = RoleColors[role] or Color3.new(1, 1, 1)
+
+			Drawings[player].Name.Text = player.Name
+			Drawings[player].Name.Color = color
+			Drawings[player].Name.Position = Vector2.new(pos.X, pos.Y - 25)
+			Drawings[player].Name.Visible = true
+		else
+			if Drawings[player] and Drawings[player].Name then
+				Drawings[player].Name.Visible = false
+			end
+		end
+	end
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local Tracers = {}
+local tracerESPEnabled = false
+
+-- Role detection
+local function GetRole(player)
+	if player.Backpack:FindFirstChild("Gun") or (player.Character and player.Character:FindFirstChild("Gun")) then
+		return "Sheriff"
+	elseif player.Backpack:FindFirstChild("Knife") or (player.Character and player.Character:FindFirstChild("Knife")) then
+		return "Murderer"
+	else
+		return "Innocent"
+	end
+end
+
+local RoleColors = {
+	Murderer = Color3.fromRGB(255, 0, 0),
+	Sheriff = Color3.fromRGB(0, 100, 255),
+	Innocent = Color3.fromRGB(0, 255, 0)
+}
+
+-- Rayfield toggle
+HTab:CreateToggle({
+	Name = "Tracer ESP (Role Colored)",
+	CurrentValue = false,
+	Callback = function(Value)
+		tracerESPEnabled = Value
+	end,
+})
+
+-- Update loop
+RunService.RenderStepped:Connect(function()
+	local localChar = LocalPlayer.Character
+	local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
+
+	if not tracerESPEnabled or not localHRP then
+		for _, v in pairs(Tracers) do
+			v.Visible = false
+		end
+		return
+	end
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local targetHRP = player.Character.HumanoidRootPart
+			local screenPos, onScreen = Camera:WorldToViewportPoint(targetHRP.Position)
+
+			if not onScreen or screenPos.Z < 0 then
+				if Tracers[player] then
+					Tracers[player].Visible = false
+				end
+				continue
+			end
+
+			if not Tracers[player] then
+				local line = Drawing.new("Line")
+				line.Thickness = 1.5
+				line.Transparency = 1
+				Tracers[player] = line
+			end
+
+			local role = GetRole(player)
+			local color = RoleColors[role] or Color3.new(1, 1, 1)
+
+			local fromScreen = Camera:WorldToViewportPoint(localHRP.Position)
+			local toScreen = Camera:WorldToViewportPoint(targetHRP.Position)
+
+			Tracers[player].From = Vector2.new(fromScreen.X, fromScreen.Y)
+			Tracers[player].To = Vector2.new(toScreen.X, toScreen.Y)
+			Tracers[player].Color = color
+			Tracers[player].Visible = true
+		else
+			if Tracers[player] then
+				Tracers[player].Visible = false
+			end
+		end
+	end
+end)
 
 
 local Players = game:GetService("Players")
@@ -175,7 +344,7 @@ local LocalPlayer = Players.LocalPlayer
 local GunName = "GunDrop" -- Adjust this if the name is different in your game
 
 HTab:CreateButton({
-    Name = "Teleport To Dropped Gun",
+    Name = "Grab Gun",
     Callback = function()
         local character = LocalPlayer.Character
         local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -195,7 +364,7 @@ HTab:CreateButton({
             local originalCFrame = root.CFrame
             root.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
 
-            task.wait(0.25) -- Give time to pick it up
+            task.wait(0.05) -- Give time to pick it up
             root.CFrame = originalCFrame
         else
             warn("GunDrop not found in Workspace.")
@@ -203,7 +372,9 @@ HTab:CreateButton({
     end
 })
 
-
+local ESP = {
+	Name = false
+}
 
 local Slider = HTab:CreateSlider({
    Name = "Walkspeed",
@@ -445,4 +616,98 @@ local Input = TpTab:CreateInput({
             warn("Please enter a username.")
         end
     end,
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Finds the role and returns the player
+local function GetRolePlayer(roleName)
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			if roleName == "Murderer" and (player.Backpack:FindFirstChild("Knife") or (player.Character and player.Character:FindFirstChild("Knife"))) then
+				return player
+			elseif roleName == "Sheriff" and (player.Backpack:FindFirstChild("Gun") or (player.Character and player.Character:FindFirstChild("Gun"))) then
+				return player
+			end
+		end
+	end
+end
+
+-- TP Button: Murderer
+TpTab:CreateButton({
+	Name = "Teleport to Murderer",
+	Callback = function()
+		local target = GetRolePlayer("Murderer")
+		if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+			LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+		end
+	end,
+})
+
+-- TP Button: Sheriff
+TpTab:CreateButton({
+	Name = "Teleport to Sheriff",
+	Callback = function()
+		local target = GetRolePlayer("Sheriff")
+		if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+			LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+		end
+	end,
+})
+
+local OTab = Window:CreateTab("Other", 0)
+local OSec = OTab:CreateSection("Other")
+
+local Players = game:GetService("Players")
+local setclipboard = setclipboard or toclipboard or set_clipboard -- depends on executor
+
+local function GetRole(player)
+	if player.Backpack:FindFirstChild("Gun") or (player.Character and player.Character:FindFirstChild("Gun")) then
+		return "Sheriff"
+	elseif player.Backpack:FindFirstChild("Knife") or (player.Character and player.Character:FindFirstChild("Knife")) then
+		return "Murderer"
+	else
+		return "Innocent"
+	end
+end
+
+-- 🔵 Button for Sheriff
+OTab:CreateButton({
+	Name = "Copy Sheriff",
+	Callback = function()
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= Players.LocalPlayer then
+				local role = GetRole(player)
+				if role == "Sheriff" then
+					local message = player.Name .. " is Sheriff!"
+					if setclipboard then
+						setclipboard(message)
+					else
+						warn("Clipboard function not supported.")
+					end
+				end
+			end
+		end
+	end,
+})
+
+-- 🔴 Button for Murderer
+OTab:CreateButton({
+	Name = "Copy Murd",
+	Callback = function()
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= Players.LocalPlayer then
+				local role = GetRole(player)
+				if role == "Murderer" then
+					local message = player.Name .. " is Murderer!"
+					if setclipboard then
+						setclipboard(message)
+					else
+						warn("Clipboard function not supported.")
+					end
+				end
+			end
+		end
+	end,
 })
