@@ -111,74 +111,6 @@ local Toggle = HTab:CreateToggle({
 	end,
 })
 
-
-
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-
-local gunESPConnection = nil
-
-local function createGunESP(gun)
-	if gun:FindFirstChild("GunESP") then return end
-
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "GunESP"
-	billboard.AlwaysOnTop = true
-	billboard.Size = UDim2.new(0, 100, 0, 30)
-	billboard.StudsOffset = Vector3.new(0, 2, 0)
-	billboard.Adornee = gun
-
-	local label = Instance.new("TextLabel", billboard)
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.Text = "🔫 Gun Drop"
-	label.TextColor3 = Color3.fromRGB(0, 255, 0)
-	label.TextStrokeTransparency = 0
-	label.Font = Enum.Font.GothamBold
-	label.TextScaled = true
-
-	billboard.Parent = gun
-end
-
-local function startGunESP()
-	gunESPConnection = RunService.Heartbeat:Connect(function()
-		local gun = Workspace:FindFirstChild("GunDrop")
-		if gun and gun:IsA("BasePart") then
-			createGunESP(gun)
-		end
-	end)
-end
-
-local function stopGunESP()
-	if gunESPConnection then
-		gunESPConnection:Disconnect()
-		gunESPConnection = nil
-	end
-
-	local gun = Workspace:FindFirstChild("GunDrop")
-	if gun and gun:FindFirstChild("GunESP") then
-		gun.GunESP:Destroy()
-	end
-end
-
--- Rayfield Toggle
-HTab:CreateToggle({
-	Name = "Gun ESP",
-	CurrentValue = false,
-	Flag = "GunESPToggle",
-	Callback = function(Value)
-		if Value then
-			startGunESP()
-		else
-			stopGunESP()
-		end
-	end,
-})
-
-local ESP = {
-	Name = false
-}
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
@@ -206,7 +138,7 @@ local RoleColors = {
 
 -- Toggle (Rayfield)
 HTab:CreateToggle({
-	Name = "Name ESP (MM2 Roles)",
+	Name = "Name ESP",
 	CurrentValue = false,
 	Callback = function(Value)
 		nameESPEnabled = Value
@@ -280,7 +212,7 @@ local RoleColors = {
 
 -- Rayfield toggle
 HTab:CreateToggle({
-	Name = "Tracer ESP (Role Colored)",
+	Name = "Tracer",
 	CurrentValue = false,
 	Callback = function(Value)
 		tracerESPEnabled = Value
@@ -336,6 +268,78 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+local plr = game.Players.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+local flying = false
+local speed = 50
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local BodyGyro = Instance.new("BodyGyro")
+BodyGyro.P = 9e4
+BodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+
+local BodyVelocity = Instance.new("BodyVelocity")
+BodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+
+-- Fly Functions
+local function StartFlying()
+    BodyGyro.Parent = hrp
+    BodyVelocity.Parent = hrp
+
+    RunService:BindToRenderStep("FlyMovement", Enum.RenderPriority.Character.Value, function()
+        local cf = workspace.CurrentCamera.CFrame
+        local moveDirection = Vector3.zero
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveDirection += cf.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveDirection -= cf.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveDirection -= cf.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveDirection += cf.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveDirection += cf.UpVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            moveDirection -= cf.UpVector
+        end
+
+        if moveDirection.Magnitude > 0 then
+            BodyVelocity.Velocity = moveDirection.Unit * speed
+        else
+            BodyVelocity.Velocity = Vector3.zero
+        end
+
+        BodyGyro.CFrame = cf
+    end)
+end
+
+local function StopFlying()
+    BodyGyro.Parent = nil
+    BodyVelocity.Parent = nil
+    RunService:UnbindFromRenderStep("FlyMovement")
+end
+
+HTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Callback = function(Value)
+        flying = Value
+        if flying then
+            StartFlying()
+        else
+            StopFlying()
+        end
+    end,
+})
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
