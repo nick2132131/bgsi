@@ -28,7 +28,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 local HTab = Window:CreateTab("Home", 0)
-local HSection = HTab:CreateSection("Local")
+local HSection = HTab:CreateSection("Home")
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -268,65 +268,108 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-local plr = game.Players.LocalPlayer
-local char = plr.Character or plr.CharacterAdded:Wait()
-local hrp = char:WaitForChild("HumanoidRootPart")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
 
 local flying = false
-local speed = 50
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local speed = 50 -- Default fly speed
+local bodyGyro
+local bodyVelocity
 
-local BodyGyro = Instance.new("BodyGyro")
-BodyGyro.P = 9e4
-BodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+local keys = {
+    W = false,
+    A = false,
+    S = false,
+    D = false,
+    Space = false,
+    LeftShift = false,
+}
 
-local BodyVelocity = Instance.new("BodyVelocity")
-BodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+-- Input listeners
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if keys[input.KeyCode.Name] ~= nil then
+        keys[input.KeyCode.Name] = true
+    end
+end)
 
--- Fly Functions
-local function StartFlying()
-    BodyGyro.Parent = hrp
-    BodyVelocity.Parent = hrp
+UserInputService.InputEnded:Connect(function(input)
+    if keys[input.KeyCode.Name] ~= nil then
+        keys[input.KeyCode.Name] = false
+    end
+end)
 
-    RunService:BindToRenderStep("FlyMovement", Enum.RenderPriority.Character.Value, function()
-        local cf = workspace.CurrentCamera.CFrame
-        local moveDirection = Vector3.zero
+-- Start flying
+local function startFlying()
+    if not Character or not HRP then return end
 
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveDirection += cf.LookVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveDirection -= cf.LookVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveDirection -= cf.RightVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveDirection += cf.RightVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveDirection += cf.UpVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-            moveDirection -= cf.UpVector
-        end
-
-        if moveDirection.Magnitude > 0 then
-            BodyVelocity.Velocity = moveDirection.Unit * speed
-        else
-            BodyVelocity.Velocity = Vector3.zero
-        end
-
-        BodyGyro.CFrame = cf
+    -- Clean up
+    pcall(function()
+        if bodyGyro then bodyGyro:Destroy() end
+        if bodyVelocity then bodyVelocity:Destroy() end
     end)
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.P = 9e4
+    bodyGyro.Parent = HRP
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.CFrame = HRP.CFrame
+
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.zero
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.Parent = HRP
 end
 
-local function StopFlying()
-    BodyGyro.Parent = nil
-    BodyVelocity.Parent = nil
-    RunService:UnbindFromRenderStep("FlyMovement")
+-- Stop flying
+local function stopFlying()
+    if bodyGyro then bodyGyro:Destroy() end
+    if bodyVelocity then bodyVelocity:Destroy() end
+
+    -- Restore collisions
+    if Character and Character.Parent then
+        for _, part in ipairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
 end
+
+-- Fly movement
+RunService.Heartbeat:Connect(function(deltaTime)
+    if flying and Character and HRP then
+        local cam = workspace.CurrentCamera
+        bodyGyro.CFrame = cam.CFrame
+
+        local moveVector = Vector3.zero
+        if keys.W then moveVector = moveVector + cam.CFrame.LookVector end
+        if keys.S then moveVector = moveVector - cam.CFrame.LookVector end
+        if keys.A then moveVector = moveVector - cam.CFrame.RightVector end
+        if keys.D then moveVector = moveVector + cam.CFrame.RightVector end
+        if keys.Space then moveVector = moveVector + Vector3.new(0,1,0) end
+        if keys.LeftShift then moveVector = moveVector - Vector3.new(0,1,0) end
+
+        if moveVector.Magnitude > 0 then
+            moveVector = moveVector.Unit
+        end
+        bodyVelocity.Velocity = moveVector * speed
+
+        -- Noclip
+        for _, part in ipairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- 🌟 Add to Rayfield
 
 HTab:CreateToggle({
     Name = "Fly",
@@ -334,12 +377,192 @@ HTab:CreateToggle({
     Callback = function(Value)
         flying = Value
         if flying then
-            StartFlying()
+            startFlying()
         else
-            StopFlying()
+            stopFlying()
         end
     end,
 })
+
+HTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {10, 222},
+    Increment = 1,
+    Suffix = "Fly Speed",
+    CurrentValue = speed,
+    Callback = function(Value)
+        speed = Value
+    end,
+})
+
+
+local GunESPEnabled = false
+local GunConnections = {}
+
+local function createGunESP(part)
+    if part:FindFirstChild("GunESP") then return end
+
+    local Billboard = Instance.new("BillboardGui")
+    Billboard.Name = "GunESP"
+    Billboard.Adornee = part
+    Billboard.Size = UDim2.new(0, 100, 0, 40)
+    Billboard.AlwaysOnTop = true
+    Billboard.Parent = part
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = "Gun"
+    Label.TextColor3 = Color3.fromRGB(0, 255, 255)
+    Label.TextStrokeTransparency = 0
+    Label.TextScaled = true
+    Label.Parent = Billboard
+end
+
+local function enableGunESP()
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v.Name == "GunDrop" and v:IsA("BasePart") then
+            createGunESP(v)
+        end
+    end
+
+    table.insert(GunConnections, Workspace.DescendantAdded:Connect(function(obj)
+        if obj:IsA("BasePart") and obj.Name == "GunDrop" then
+            createGunESP(obj)
+        end
+    end))
+end
+
+local function disableGunESP()
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("BasePart") and v.Name == "GunDrop" then
+            local esp = v:FindFirstChild("GunESP")
+            if esp then esp:Destroy() end
+        end
+    end
+    for _, conn in ipairs(GunConnections) do
+        conn:Disconnect()
+    end
+    GunConnections = {}
+end
+
+--// Rayfield Toggle
+local Gun = HTab:CreateToggle({
+    Name = "Gun ESP",
+    CurrentValue = false,
+    Flag = "GunESP",
+    Callback = function(Value)
+        GunESPEnabled = Value
+        if Value then
+            enableGunESP()
+        else
+            disableGunESP()
+        end
+    end,
+})
+
+
+local XrayEnabled = false
+local TransparencyAmount = 0.7
+local MaterialType = Enum.Material.ForceField
+local SavedProperties = {}
+
+--// Functions
+local function isPlayerPart(part)
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character and part:IsDescendantOf(player.Character) then
+            return true
+        end
+    end
+    return false
+end
+
+local function setXray(state)
+    for _, obj in pairs(game:GetService("Workspace"):GetDescendants()) do
+        if obj:IsA("BasePart") and not isPlayerPart(obj) then
+            if state then
+                -- Save original properties
+                if not SavedProperties[obj] then
+                    SavedProperties[obj] = {
+                        Transparency = obj.Transparency,
+                        Material = obj.Material
+                    }
+                end
+                -- Apply X-ray
+                obj.Transparency = TransparencyAmount
+                obj.Material = MaterialType
+            else
+                -- Restore original
+                if SavedProperties[obj] then
+                    obj.Transparency = SavedProperties[obj].Transparency
+                    obj.Material = SavedProperties[obj].Material
+                end
+            end
+        end
+    end
+
+    -- Clear saved properties if disabling
+    if not state then
+        SavedProperties = {}
+    end
+end
+
+--// Toggle
+local Toggle = HTab:CreateToggle({
+    Name = "X-Ray",
+    CurrentValue = false,
+    Flag = "XrayToggle",
+    Callback = function(Value)
+        XrayEnabled = Value
+        setXray(XrayEnabled)
+    end,
+})
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+
+local AutoGrabGun = false
+local GunName = "GunDrop"
+
+local function grabGun()
+    if not Character or not HRP then return end
+
+    local gun = Workspace:FindFirstChild(GunName, true)
+    if gun then
+        local targetPart = gun:IsA("BasePart") and gun or gun:FindFirstChildWhichIsA("BasePart")
+        if not targetPart then return end
+
+        local originalCFrame = HRP.CFrame
+        HRP.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+
+        task.wait(0.05) -- Wait to pick up
+        HRP.CFrame = originalCFrame
+    end
+end
+
+-- Auto-grab loop
+task.spawn(function()
+    while task.wait(0.2) do
+        if AutoGrabGun then
+            grabGun()
+        end
+    end
+end)
+
+-- Add Rayfield Toggle
+HTab:CreateToggle({
+    Name = "Auto Grab Gun",
+    CurrentValue = false,
+    Callback = function(Value)
+        AutoGrabGun = Value
+    end,
+})
+
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -714,4 +937,125 @@ OTab:CreateButton({
 			end
 		end
 	end,
+})
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local mapNames = {
+    "Milbase", "Hospital3", "Workplace", "ResearchFacility", "House2", "Mansion2",
+    "Biolab", "Office3", "PoliceStation", "Factory", "Bank2", "Hotel"
+}
+
+local function teleportTo(position)
+    local character = LocalPlayer.Character
+    if character then
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(position)
+        end
+    end
+end
+
+local function findCurrentMap()
+    for _, name in ipairs(mapNames) do
+        local map = Workspace:FindFirstChild(name)
+        if map then
+            return map
+        end
+    end
+    return nil
+end
+
+
+TpTab:CreateButton({
+    Name = "Teleport Above Map",
+    Callback = function()
+        local map = findCurrentMap()
+        if map then
+            local pos = map:GetModelCFrame().Position + Vector3.new(0, 100, 0) -- 100 studs above
+            teleportTo(pos)
+        else
+            warn("No current map found.")
+        end
+    end,
+})
+
+TpTab:CreateButton({
+    Name = "Teleport to Map",
+    Callback = function()
+        local map = findCurrentMap()
+        if map then
+            teleportTo(map:GetModelCFrame().Position)
+        else
+            warn("No current map found.")
+        end
+    end,
+})
+
+TpTab:CreateButton({
+    Name = "Teleport to Lobby",
+    Callback = function()
+        local lobby = Workspace:FindFirstChild("Lobby")
+        if lobby and lobby:IsA("Model") then
+            teleportTo(lobby:GetModelCFrame().Position)
+        else
+            warn("Lobby model not found.")
+        end
+    end,
+})
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+
+local AutoFarmEnabled = false
+local SafeHeight = 300
+local FlySpeed = 80 -- studs per second
+
+-- Find nearest coin
+local function findNearestCoin()
+    local closestCoin
+    local shortestDistance = math.huge
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name:lower():find("coin") then
+            local distance = (HRP.Position - obj.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                closestCoin = obj
+            end
+        end
+    end
+    return closestCoin
+end
+
+-- Main fly logic
+RunService.Heartbeat:Connect(function(deltaTime)
+    if AutoFarmEnabled and HRP and HRP.Parent then
+        local targetCoin = findNearestCoin()
+        if targetCoin and targetCoin:IsDescendantOf(Workspace) then
+            local direction = (targetCoin.Position - HRP.Position).Unit
+            HRP.CFrame = HRP.CFrame + direction * FlySpeed * deltaTime
+        else
+            -- No coin, fly up to SafeHeight
+            if HRP.Position.Y < SafeHeight then
+                local direction = Vector3.new(0, 1, 0)
+                HRP.CFrame = HRP.CFrame + direction * FlySpeed * deltaTime
+            end
+        end
+    end
+end)
+
+-- Rayfield Toggle
+OTab:CreateToggle({
+    Name = "Auto Farm",
+    CurrentValue = false,
+    Callback = function(Value)
+        AutoFarmEnabled = Value
+    end,
 })
