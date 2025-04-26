@@ -1,0 +1,559 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Lunar X | Arsenal",
+   Icon = 0, 
+   LoadingTitle = "Lunar X",
+   LoadingSubtitle = "by n._2222",
+   Theme = "DarkBlue", 
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Big Hub"
+   },
+
+   Discord = {
+      Enabled = false, 
+      Invite = "noinvitelink", 
+      RememberJoins = true 
+   },
+
+   KeySystem = true,
+   KeySettings = {
+      Title = "Lunar X",
+      Subtitle = "Key System",
+      Note = "Yes", 
+      FileName = "e", 
+      SaveKey = true, 
+      GrabKeyFromSite = false, 
+      Key = {"e", "ghstsc"}
+   }
+})
+
+local ATab = Window:CreateTab("Aim", 0) 
+local ASec = ATab:CreateSection("Aimbot")
+
+--// Variables
+local aimbotEnabled = false
+local teamCheckEnabled = false
+local fovVisible = true
+local fovSize = 100
+local smoothness = 0.1
+local aimPart = "Head"
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+--// FOV Circle
+local fovCircle = Drawing.new("Circle")
+fovCircle.Color = Color3.fromRGB(255, 255, 255)
+fovCircle.Thickness = 1
+fovCircle.NumSides = 100
+fovCircle.Filled = false
+fovCircle.Radius = fovSize
+fovCircle.Visible = fovVisible
+
+--// Rayfield Toggles and Sliders
+ATab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Callback = function(Value)
+        aimbotEnabled = Value
+    end,
+})
+
+ATab:CreateToggle({
+    Name = "Team Check",
+    CurrentValue = false,
+    Callback = function(Value)
+        teamCheckEnabled = Value
+    end,
+})
+
+ATab:CreateToggle({
+    Name = "FOV Circle Visible",
+    CurrentValue = false,
+    Callback = function(Value)
+        fovVisible = Value
+        fovCircle.Visible = Value
+    end,
+})
+
+ATab:CreateSlider({
+    Name = "FOV Size",
+    Range = {10, 333},
+    Increment = 1,
+    Suffix = "FOV",
+    CurrentValue = 100,
+    Callback = function(Value)
+        fovSize = Value
+        fovCircle.Radius = Value
+    end,
+})
+
+ATab:CreateSlider({
+    Name = "Smoothness",
+    Range = {0.01, 1},
+    Increment = 0.01,
+    Suffix = "Smoothness",
+    CurrentValue = 0.1,
+    Callback = function(Value)
+        smoothness = Value
+    end,
+})
+
+--// Get Closest Player Function
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    local mouseLocation = UIS:GetMouseLocation()
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer
+        and player.Character
+        and player.Character:FindFirstChild(aimPart)
+        and player.Character:FindFirstChild("Humanoid")
+        and player.Character.Humanoid.Health > 0 then
+
+            --// Team Check Fix
+            if teamCheckEnabled then
+                if player.Team ~= nil and LocalPlayer.Team ~= nil then
+                    if player.Team == LocalPlayer.Team then
+                        continue
+                    end
+                end
+            end
+
+            local partPos, onScreen = Camera:WorldToViewportPoint(player.Character[aimPart].Position)
+            if onScreen then
+                local distance = (Vector2.new(partPos.X, partPos.Y) - mouseLocation).Magnitude
+                if distance < shortestDistance and distance < fovSize then
+                    closestPlayer = player
+                    shortestDistance = distance
+                end
+            end
+        end
+    end
+
+    return closestPlayer
+end
+
+--// Aimbot + FOV Circle Update
+RunService.RenderStepped:Connect(function()
+    -- Update FOV Circle Position
+    local mouseLocation = UIS:GetMouseLocation()
+    fovCircle.Position = Vector2.new(mouseLocation.X, mouseLocation.Y)
+
+    -- Aimbot
+    if aimbotEnabled and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then --// RIGHT CLICK
+        local target = getClosestPlayer()
+        if target and target.Character and target.Character:FindFirstChild(aimPart) then
+            local targetPos = target.Character[aimPart].Position
+            local cameraPos = Camera.CFrame.Position
+            local newCFrame = CFrame.lookAt(cameraPos, targetPos)
+            Camera.CFrame = Camera.CFrame:Lerp(newCFrame, smoothness)
+        end
+    end
+end)
+
+
+local VTab = Window:CreateTab("Visual", 0) 
+local VSec = VTab:CreateSection("Esp")
+
+local tracersEnabled = false
+local tracers = {}
+
+--// Services
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+--// Toggle for Tracer ESP
+local Toggle = VTab:CreateToggle({
+    Name = "Tracers",
+    CurrentValue = false,
+    Callback = function(Value)
+        tracersEnabled = Value
+
+        if not Value then
+            -- Remove all tracers
+            for _, tracer in ipairs(tracers) do
+                if tracer then
+                    tracer:Remove()
+                end
+            end
+            tracers = {}
+        end
+    end,
+})
+
+--// Tracer Update
+RunService.RenderStepped:Connect(function()
+    if tracersEnabled then
+        -- Clear old tracers
+        for _, tracer in ipairs(tracers) do
+            if tracer then
+                tracer:Remove()
+            end
+        end
+        tracers = {}
+
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                if onScreen then
+                    local tracer = Drawing.new("Line")
+                    tracer.Color = Color3.fromRGB(255, 255, 255)
+                    tracer.Thickness = 1
+                    tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                    tracer.To = Vector2.new(pos.X, pos.Y)
+                    tracer.Visible = true
+                    table.insert(tracers, tracer)
+                end
+            end
+        end
+    end
+end)
+
+local nameESPEnabled = false
+
+local Toggle = VTab:CreateToggle({
+    Name = "Name ESP",
+    CurrentValue = false,
+    Callback = function(Value)
+        nameESPEnabled = Value
+    end,
+})
+
+task.spawn(function()
+    local RunService = game:GetService("RunService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Camera = workspace.CurrentCamera
+
+    RunService.RenderStepped:Connect(function()
+        if nameESPEnabled then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                    local head = player.Character.Head
+                    local text = Drawing.new("Text")
+                    text.Text = player.Name
+                    text.Size = 15
+                    text.Center = true
+                    text.Outline = true
+                    text.Color = Color3.fromRGB(255, 255, 255)
+
+                    local pos, onScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 2, 0))
+                    if onScreen then
+                        text.Position = Vector2.new(pos.X, pos.Y)
+                        text.Visible = true
+                    else
+                        text.Visible = false
+                    end
+                    task.wait()
+                    text:Remove()
+                end
+            end
+        end
+    end)
+end)
+
+local healthESPEnabled = false
+
+local Toggle = VTab:CreateToggle({
+    Name = "Health ESP",
+    CurrentValue = false,
+    Callback = function(Value)
+        healthESPEnabled = Value
+    end,
+})
+
+task.spawn(function()
+    local RunService = game:GetService("RunService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Camera = workspace.CurrentCamera
+
+    RunService.RenderStepped:Connect(function()
+        if healthESPEnabled then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local humanoid = player.Character.Humanoid
+                    local hrp = player.Character.HumanoidRootPart
+
+                    local line = Drawing.new("Line")
+                    line.Color = Color3.fromRGB(0, 255, 0)
+                    line.Thickness = 2
+
+                    local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                    if onScreen then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        line.From = Vector2.new(pos.X - 40, pos.Y)
+                        line.To = Vector2.new(pos.X - 40, pos.Y - (50 * healthPercent))
+                        line.Visible = true
+                    else
+                        line.Visible = false
+                    end
+                    task.wait()
+                    line:Remove()
+                end
+            end
+        end
+    end)
+end)
+
+local boxESPEnabled = false
+
+local Toggle = VTab:CreateToggle({
+    Name = "ESP",
+    CurrentValue = false,
+    Callback = function(Value)
+        boxESPEnabled = Value
+    end,
+})
+
+task.spawn(function()
+    local RunService = game:GetService("RunService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Camera = workspace.CurrentCamera
+
+    RunService.RenderStepped:Connect(function()
+        if boxESPEnabled then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = player.Character.HumanoidRootPart
+                    local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                    if onScreen then
+                        local box = Drawing.new("Square")
+                        box.Color = Color3.fromRGB(255, 255, 255)
+                        box.Thickness = 1
+                        box.Size = Vector2.new(50, 70)
+                        box.Position = Vector2.new(pos.X - 25, pos.Y - 35)
+                        box.Visible = true
+                        task.wait()
+                        box:Remove()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+local LTab = Window:CreateTab("Local", 0)
+local LSec = LTab:CreateSection("Player")
+
+local InfiniteJumpEnabled = false 
+
+local Toggle = LTab:CreateToggle({
+   Name = "Infinite Jump",
+   CurrentValue = false,
+   Flag = "InfiniteJumpToggle", 
+   Callback = function(Value)
+       InfiniteJumpEnabled = Value 
+       if InfiniteJumpEnabled then
+
+           game:GetService("UserInputService").JumpRequest:Connect(function()
+               if InfiniteJumpEnabled then
+                   local player = game.Players.LocalPlayer
+                   if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                       player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                   end
+               end
+           end)
+           print("Infinite Jump Enabled")
+       else
+           print("Infinite Jump Disabled")
+       end
+   end,
+})
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    InfiniteJumpEnabled = false 
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+local noclipConnection = nil
+local noclipEnabled = false
+
+local Toggle = LTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(Value)
+        noclipEnabled = Value
+
+        if Value then
+            noclipConnection = RunService.Stepped:Connect(function()
+                local char = LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
+
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end,
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+
+local flying = false
+local speed = 50 -- Default fly speed
+local bodyGyro
+local bodyVelocity
+
+local keys = {
+    W = false,
+    A = false,
+    S = false,
+    D = false,
+    Space = false,
+    LeftShift = false,
+}
+
+-- Input listeners
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if keys[input.KeyCode.Name] ~= nil then
+        keys[input.KeyCode.Name] = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if keys[input.KeyCode.Name] ~= nil then
+        keys[input.KeyCode.Name] = false
+    end
+end)
+
+-- Start flying
+local function startFlying()
+    if not Character or not HRP then return end
+
+    -- Clean up
+    pcall(function()
+        if bodyGyro then bodyGyro:Destroy() end
+        if bodyVelocity then bodyVelocity:Destroy() end
+    end)
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.P = 9e4
+    bodyGyro.Parent = HRP
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.CFrame = HRP.CFrame
+
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.zero
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.Parent = HRP
+end
+
+-- Stop flying
+local function stopFlying()
+    if bodyGyro then bodyGyro:Destroy() end
+    if bodyVelocity then bodyVelocity:Destroy() end
+
+    -- Restore collisions
+    if Character and Character.Parent then
+        for _, part in ipairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
+-- Fly movement
+RunService.Heartbeat:Connect(function(deltaTime)
+    if flying and Character and HRP then
+        local cam = workspace.CurrentCamera
+        bodyGyro.CFrame = cam.CFrame
+
+        local moveVector = Vector3.zero
+        if keys.W then moveVector = moveVector + cam.CFrame.LookVector end
+        if keys.S then moveVector = moveVector - cam.CFrame.LookVector end
+        if keys.A then moveVector = moveVector - cam.CFrame.RightVector end
+        if keys.D then moveVector = moveVector + cam.CFrame.RightVector end
+        if keys.Space then moveVector = moveVector + Vector3.new(0,1,0) end
+        if keys.LeftShift then moveVector = moveVector - Vector3.new(0,1,0) end
+
+        if moveVector.Magnitude > 0 then
+            moveVector = moveVector.Unit
+        end
+        bodyVelocity.Velocity = moveVector * speed
+
+        -- Noclip
+        for _, part in ipairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- 🌟 Add to Rayfield
+
+LTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Callback = function(Value)
+        flying = Value
+        if flying then
+            startFlying()
+        else
+            stopFlying()
+        end
+    end,
+})
+
+LTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {10, 222},
+    Increment = 1,
+    Suffix = "Fly Speed",
+    CurrentValue = speed,
+    Callback = function(Value)
+        speed = Value
+    end,
+})
+
+local WTab = Window:CreateTab("Weapon", 0)
+local WSec = WTab:CreateSection("Weapon")
+
+WTab:CreateToggle("Coming soon")
