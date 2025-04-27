@@ -40,7 +40,7 @@ local ASec = ATab:CreateSection("Aimbot")
 --// Variables
 local aimbotEnabled = false
 local teamCheckEnabled = false
-local fovVisible = true
+local fovVisible = false
 local fovSize = 100
 local smoothness = 0.1
 local aimPart = "Head"
@@ -163,7 +163,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-
 local VTab = Window:CreateTab("Visual", 0) 
 local VSec = VTab:CreateSection("Esp")
 
@@ -266,87 +265,126 @@ task.spawn(function()
     end)
 end)
 
-local healthESPEnabled = false
+--// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
 
-local Toggle = VTab:CreateToggle({
-    Name = "Health ESP",
-    CurrentValue = false,
-    Callback = function(Value)
-        healthESPEnabled = Value
-    end,
-})
+--// Variables
+local LocalPlayer = Players.LocalPlayer
+local BoxESPEnabled = false
+local HealthESPEnabled = false
+local Boxes = {}
+local HealthTexts = {}
 
-task.spawn(function()
-    local RunService = game:GetService("RunService")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local Camera = workspace.CurrentCamera
+--// Functions
+local function CreateESP(player)
+    if player == LocalPlayer then return end
+    
+    local box = Drawing.new("Square")
+    box.Thickness = 2
+    box.Color = Color3.new(1, 1, 1)
+    box.Transparency = 1
+    box.Filled = false
+    box.Visible = false
+    Boxes[player] = box
 
-    RunService.RenderStepped:Connect(function()
-        if healthESPEnabled then
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local humanoid = player.Character.Humanoid
-                    local hrp = player.Character.HumanoidRootPart
+    local healthText = Drawing.new("Text")
+    healthText.Size = 16
+    healthText.Color = Color3.new(1, 1, 1)
+    healthText.Center = true
+    healthText.Outline = true
+    healthText.Visible = false
+    HealthTexts[player] = healthText
+end
 
-                    local line = Drawing.new("Line")
-                    line.Color = Color3.fromRGB(0, 255, 0)
-                    line.Thickness = 2
+local function RemoveESP(player)
+    if Boxes[player] then
+        Boxes[player]:Remove()
+        Boxes[player] = nil
+    end
+    if HealthTexts[player] then
+        HealthTexts[player]:Remove()
+        HealthTexts[player] = nil
+    end
+end
 
-                    local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-                    if onScreen then
-                        local healthPercent = humanoid.Health / humanoid.MaxHealth
-                        line.From = Vector2.new(pos.X - 40, pos.Y)
-                        line.To = Vector2.new(pos.X - 40, pos.Y - (50 * healthPercent))
-                        line.Visible = true
-                    else
-                        line.Visible = false
-                    end
-                    task.wait()
-                    line:Remove()
+--// Player Management
+Players.PlayerAdded:Connect(CreateESP)
+Players.PlayerRemoving:Connect(RemoveESP)
+
+for _, player in ipairs(Players:GetPlayers()) do
+    CreateESP(player)
+end
+
+--// Main Loop
+RunService.RenderStepped:Connect(function()
+    for player, box in pairs(Boxes) do
+        local character = player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        local healthText = HealthTexts[player]
+        
+        if humanoid and humanoid.Health > 0 and hrp then
+            local position, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+            if onScreen then
+                local sizeY = (Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0)).Y) / 2
+                local sizeX = sizeY * 0.6
+
+                if BoxESPEnabled then
+                    box.Size = Vector2.new(sizeX * 2, sizeY * 2)
+                    box.Position = Vector2.new(position.X - sizeX, position.Y - sizeY)
+                    box.Visible = true
+                else
+                    box.Visible = false
                 end
+
+                if HealthESPEnabled then
+                    healthText.Text = math.floor(humanoid.Health) .. " HP"
+                    healthText.Position = Vector2.new(position.X, position.Y - sizeY - 15)
+                    healthText.Visible = true
+
+                    if humanoid.Health > 75 then
+                        healthText.Color = Color3.fromRGB(0, 255, 0)
+                    elseif humanoid.Health > 40 then
+                        healthText.Color = Color3.fromRGB(255, 165, 0)
+                    else
+                        healthText.Color = Color3.fromRGB(255, 0, 0)
+                    end
+                else
+                    healthText.Visible = false
+                end
+
+            else
+                box.Visible = false
+                healthText.Visible = false
             end
+        else
+            box.Visible = false
+            healthText.Visible = false
         end
-    end)
+    end
 end)
 
-local boxESPEnabled = false
-
-local Toggle = VTab:CreateToggle({
+local BoxToggle = VTab:CreateToggle({
     Name = "ESP",
     CurrentValue = false,
+    Flag = "BoxESPEnabled",
     Callback = function(Value)
-        boxESPEnabled = Value
+        BoxESPEnabled = Value
     end,
 })
 
-task.spawn(function()
-    local RunService = game:GetService("RunService")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local Camera = workspace.CurrentCamera
+local HealthToggle = VTab:CreateToggle({
+    Name = "Health ESP",
+    CurrentValue = false,
+    Flag = "HealthESPEnabled",
+    Callback = function(Value)
+        HealthESPEnabled = Value
+    end,
+})
 
-    RunService.RenderStepped:Connect(function()
-        if boxESPEnabled then
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local hrp = player.Character.HumanoidRootPart
-                    local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-                    if onScreen then
-                        local box = Drawing.new("Square")
-                        box.Color = Color3.fromRGB(255, 255, 255)
-                        box.Thickness = 1
-                        box.Size = Vector2.new(50, 70)
-                        box.Position = Vector2.new(pos.X - 25, pos.Y - 35)
-                        box.Visible = true
-                        task.wait()
-                        box:Remove()
-                    end
-                end
-            end
-        end
-    end)
-end)
 
 local LTab = Window:CreateTab("Local", 0)
 local LSec = LTab:CreateSection("Player")
@@ -556,4 +594,135 @@ LTab:CreateSlider({
 local WTab = Window:CreateTab("Weapon", 0)
 local WSec = WTab:CreateSection("Weapon")
 
-WTab:CreateToggle("Coming soon")
+--// Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Weapons = ReplicatedStorage:WaitForChild("Weapons")
+
+--// Variables
+local NoSpreadEnabled = false
+
+--// Functions
+local function ToggleNoSpread(state)
+    for _, weapon in pairs(Weapons:GetChildren()) do
+        if weapon:FindFirstChild("Spread") then
+            weapon.Spread.Value = state and 0 or 1 -- default 1
+        end
+        if weapon:FindFirstChild("MaxSpread") then
+            weapon.MaxSpread.Value = state and 0 or 1
+        end
+        if weapon:FindFirstChild("MinSpread") then
+            weapon.MinSpread.Value = state and 0 or 0.5
+        end
+        if weapon:FindFirstChild("Bloom") then
+            weapon.Bloom.Value = state and 0 or 1
+        end
+    end
+end
+
+WTab:CreateToggle({
+    Name = "No Spread",
+    CurrentValue = false,
+    Callback = function(Value)
+        NoSpreadEnabled = Value
+        ToggleNoSpread(NoSpreadEnabled)
+    end,
+})
+
+--// Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Weapons = ReplicatedStorage:WaitForChild("Weapons")
+
+--// Variables
+local RapidFireEnabled = false
+
+--// Functions
+local function ToggleRapidFire(state)
+    for _, weapon in pairs(Weapons:GetChildren()) do
+        if weapon:FindFirstChild("FireRate") then
+            weapon.FireRate.Value = state and 0.05 or 0.15 -- 0.05 = CRAZY FAST, 0.15 = normal
+        end
+    end
+end
+
+--// Rapid Fire Toggle
+WTab:CreateToggle({
+    Name = "Rapid Fire",
+    CurrentValue = false,
+    Callback = function(Value)
+        RapidFireEnabled = Value
+        ToggleRapidFire(RapidFireEnabled)
+    end,
+})
+
+--// Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Weapons = ReplicatedStorage:WaitForChild("Weapons")
+
+--// Variables
+local InfiniteAmmoEnabled = false
+
+--// Function to refill ammo
+local function RefillAmmo()
+    for _, weapon in pairs(Weapons:GetChildren()) do
+        if weapon:FindFirstChild("Ammo") then
+            weapon.Ammo.Value = 250
+        end
+        if weapon:FindFirstChild("MaxAmmo") then
+            weapon.MaxAmmo.Value = 250
+        end
+    end
+end
+
+--// Loop to keep checking
+task.spawn(function()
+    while true do
+        if InfiniteAmmoEnabled then
+            RefillAmmo()
+        end
+        task.wait(1) -- refresh every second
+    end
+end)
+
+WTab:CreateToggle({
+    Name = "Infinite Ammo",
+    CurrentValue = false,
+    Callback = function(Value)
+        InfiniteAmmoEnabled = Value
+        print("Infinite Ammo is now", Value and "ENABLED" or "DISABLED")
+    end,
+})
+
+--// Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Weapons = ReplicatedStorage:WaitForChild("Weapons")
+
+--// Variables
+local NoRecoilEnabled = false
+
+--// Function to apply or reset recoil
+local function SetRecoil(enabled)
+    for _, weapon in pairs(Weapons:GetChildren()) do
+        if weapon:FindFirstChild("RecoilControl") then
+            weapon.RecoilControl.Value = enabled and 0 or 1 -- 1 is default-ish
+        end
+        if weapon:FindFirstChild("RecoilMax") then
+            weapon.RecoilMax.Value = enabled and 0 or 1
+        end
+        if weapon:FindFirstChild("RecoilMin") then
+            weapon.RecoilMin.Value = enabled and 0 or 1
+        end
+        if weapon:FindFirstChild("RecoilPunch") then
+            weapon.RecoilPunch.Value = enabled and Vector3.new(0, 0, 0) or Vector3.new(1, 1, 1)
+        end
+    end
+end
+
+WTab:CreateToggle({
+    Name = "No Recoil",
+    CurrentValue = false,
+    Callback = function(Value)
+        NoRecoilEnabled = Value
+        SetRecoil(Value)
+        print("No Recoil is now", Value and "ENABLED" or "DISABLED")
+    end,
+})
