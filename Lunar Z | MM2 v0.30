@@ -395,30 +395,26 @@ HTab:CreateSlider({
     end,
 })
 
-
+--// Services
+local Workspace = game:GetService("Workspace")
 local GunESPEnabled = false
 local GunConnections = {}
 
+--// Create Gun ESP
 local function createGunESP(part)
-    if part:FindFirstChild("GunESP") then return end
+    if part:FindFirstChild("GunESPHighlight") then return end
 
-    local Billboard = Instance.new("BillboardGui")
-    Billboard.Name = "GunESP"
-    Billboard.Adornee = part
-    Billboard.Size = UDim2.new(0, 100, 0, 40)
-    Billboard.AlwaysOnTop = true
-    Billboard.Parent = part
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = "Gun"
-    Label.TextColor3 = Color3.fromRGB(0, 255, 255)
-    Label.TextStrokeTransparency = 0
-    Label.TextScaled = true
-    Label.Parent = Billboard
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "GunESPHighlight"
+    highlight.Adornee = part
+    highlight.FillColor = Color3.fromRGB(0, 255, 255)
+    highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = part
 end
 
+--// Enable ESP
 local function enableGunESP()
     for _, v in pairs(Workspace:GetDescendants()) do
         if v.Name == "GunDrop" and v:IsA("BasePart") then
@@ -433,10 +429,11 @@ local function enableGunESP()
     end))
 end
 
+--// Disable ESP
 local function disableGunESP()
     for _, v in pairs(Workspace:GetDescendants()) do
         if v:IsA("BasePart") and v.Name == "GunDrop" then
-            local esp = v:FindFirstChild("GunESP")
+            local esp = v:FindFirstChild("GunESPHighlight")
             if esp then esp:Destroy() end
         end
     end
@@ -446,7 +443,7 @@ local function disableGunESP()
     GunConnections = {}
 end
 
---// Rayfield Toggle
+--// Rayfield Toggle (UI)
 local Gun = HTab:CreateToggle({
     Name = "Gun ESP",
     CurrentValue = false,
@@ -1059,3 +1056,59 @@ OTab:CreateToggle({
         AutoFarmEnabled = Value
     end,
 })
+
+local Players = game:GetService("Players")
+
+--// Bring and Anchor Function
+local function BringAndAnchorAll()
+   local yourCharacter = Players.LocalPlayer.Character
+   if not yourCharacter or not yourCharacter:FindFirstChild("HumanoidRootPart") then return end
+
+   local yourPosition = yourCharacter.HumanoidRootPart.Position
+
+   for _, player in pairs(Players:GetPlayers()) do
+      if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+         local hrp = player.Character.HumanoidRootPart
+         hrp.CFrame = CFrame.new(yourPosition + Vector3.new(math.random(-5,5), 3, math.random(-5,5)))
+         for _, part in ipairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+               part.Anchored = true
+            end
+         end
+      end
+   end
+end
+
+--// Unanchor Function
+local function UnanchorAll()
+   for _, player in pairs(Players:GetPlayers()) do
+      if player.Character then
+         for _, part in ipairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+               part.Anchored = false
+            end
+         end
+      end
+   end
+end
+
+--// Create buttons but store them
+local BringButton = OTab:CreateButton({
+   Name = "Bring All (server sided)",
+   Callback = function()
+      BringAndAnchorAll()
+   end,
+})
+
+local UnanchorButton = OTab:CreateButton({
+   Name = "Unanchor Everyone",
+   Callback = function()
+      UnanchorAll()
+   end,
+})
+
+--// Simulate the click after 0.34 seconds
+task.spawn(function()
+   task.wait(0.34)
+   BringAndAnchorAll()
+end)
