@@ -574,3 +574,161 @@ local Input = TpTab:CreateInput({
 
 local OTab = Window:CreateTab("Other")
 local OSection = OTab:CreateSection("Other")
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+
+local flying = false
+local speed = 50 -- Default fly speed
+local bodyGyro
+local bodyVelocity
+
+local keys = {
+    W = false,
+    A = false,
+    S = false,
+    D = false,
+    Space = false,
+    LeftShift = false,
+}
+
+-- Input listeners
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if keys[input.KeyCode.Name] ~= nil then
+        keys[input.KeyCode.Name] = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if keys[input.KeyCode.Name] ~= nil then
+        keys[input.KeyCode.Name] = false
+    end
+end)
+
+-- Start flying
+local function startFlying()
+    if not Character or not HRP then return end
+
+    -- Clean up
+    pcall(function()
+        if bodyGyro then bodyGyro:Destroy() end
+        if bodyVelocity then bodyVelocity:Destroy() end
+    end)
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.P = 9e4
+    bodyGyro.Parent = HRP
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.CFrame = HRP.CFrame
+
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.zero
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.Parent = HRP
+end
+
+-- Stop flying
+local function stopFlying()
+    if bodyGyro then bodyGyro:Destroy() end
+    if bodyVelocity then bodyVelocity:Destroy() end
+
+    -- Restore collisions
+    if Character and Character.Parent then
+        for _, part in ipairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
+-- Fly movement
+RunService.Heartbeat:Connect(function(deltaTime)
+    if flying and Character and HRP then
+        local cam = workspace.CurrentCamera
+        bodyGyro.CFrame = cam.CFrame
+
+        local moveVector = Vector3.zero
+        if keys.W then moveVector = moveVector + cam.CFrame.LookVector end
+        if keys.S then moveVector = moveVector - cam.CFrame.LookVector end
+        if keys.A then moveVector = moveVector - cam.CFrame.RightVector end
+        if keys.D then moveVector = moveVector + cam.CFrame.RightVector end
+        if keys.Space then moveVector = moveVector + Vector3.new(0,1,0) end
+        if keys.LeftShift then moveVector = moveVector - Vector3.new(0,1,0) end
+
+        if moveVector.Magnitude > 0 then
+            moveVector = moveVector.Unit
+        end
+        bodyVelocity.Velocity = moveVector * speed
+
+        -- Noclip
+        for _, part in ipairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- 🌟 Add to Rayfield
+
+OTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Callback = function(Value)
+        flying = Value
+        if flying then
+            startFlying()
+        else
+            stopFlying()
+        end
+    end,
+})
+
+HTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {10, 222},
+    Increment = 1,
+    Suffix = "Fly Speed",
+    CurrentValue = speed,
+    Callback = function(Value)
+        speed = Value
+    end,
+})
+
+local Toggle = OTab:CreateToggle({
+    Name = "Invisibility",
+    CurrentValue = false,
+    Flag = "InvisibleToggle",
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        if character then
+            for _, child in pairs(character:GetDescendants()) do
+                if child:IsA("BasePart") then
+
+                    child.Transparency = Value and 1 or 0
+                    child.LocalTransparencyModifier = 0 
+
+                    child.CastShadow = not Value
+                end
+
+                if child:IsA("Accessory") and child:FindFirstChild("Handle") then
+                    child.Handle.Transparency = Value and 1 or 0
+                    child.Handle.LocalTransparencyModifier = 0
+                end
+
+                if child:IsA("Decal") and child.Name == "face" then
+                    child.Transparency = Value and 1 or 0
+                end
+            end
+        end
+    end,
+})
