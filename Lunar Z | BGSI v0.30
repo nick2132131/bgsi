@@ -691,7 +691,7 @@ OTab:CreateToggle({
     end,
 })
 
-HTab:CreateSlider({
+OTab:CreateSlider({
     Name = "Fly Speed",
     Range = {10, 222},
     Increment = 1,
