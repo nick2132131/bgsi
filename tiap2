@@ -1,0 +1,505 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Lunar Z | TIAP2",
+    Icon = 0, 
+    LoadingTitle = "Lunar Z | TIAP2",
+    LoadingSubtitle = "by ghst._O_O.",
+    Theme = "DarkBlue", 
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false, 
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil, 
+        FileName = "Big Hub"
+    },
+    KeySystem = true, 
+    KeySettings = {
+        Title = "Lunar Z | TIAP2",
+        Subtitle = "Key System",
+        Note = ".gg/Qm9Fvvc4cm", 
+        FileName = "Key13", 
+        SaveKey = false,
+        GrabKeyFromSite = true, 
+        Key = {"e", "https://pastebin.com/raw/VtszSUFa", "dev"} 
+    }
+})
+
+Rayfield:Notify({
+    Title = "Loaded Script.",
+    Content = "Loaded TIAP2 v.1 ( made by ghst._0_0. ) ",
+    Duration = 6.5,
+    Image = 4483362458,
+})
+
+local HTab = Window:CreateTab("Troll", 0)
+
+local TSection = HTab:CreateSection("Character")
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local flyOn = false
+local flySpeed = 50
+local currentTarget = 1
+local isZMovement = false
+local originalPosition = nil
+local transparencyStates = {} -- Table to store original transparencies
+
+-- Define waypoints as CFrames
+local waypoints = {
+    CFrame.new(-23.2857819, 143.646286, -81.2006226),
+    CFrame.new(-34.2857819, 143.646286, -81.2006226),
+    CFrame.new(-45.2857819, 143.646286, -81.2006226)
+	CFrame.new(-78.8164291381836, 145.16867065429688, -81.17121124267578)
+}
+local zSwitchPosition = CFrame.new(-78.7858582, 143.646286, -63.2007141)
+
+-- Function to enable/disable noclip
+local function setNoclip(enabled)
+    character = player.Character or player.CharacterAdded:Wait()
+    if character then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = not enabled
+            end
+        end
+    end
+end
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local flyOn = false
+local bodyVelocity, bodyGyro
+local flySpeed = 50
+local keysPressed = {}
+local character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+
+-- Function to safely get or wait for character
+local function getCharacter()
+    local currentChar = game.Players.LocalPlayer.Character
+    if not currentChar or not currentChar.Parent then
+        currentChar = game.Players.LocalPlayer.CharacterAdded:Wait()
+    end
+    return currentChar
+end
+
+-- Function to enable/disable noclip
+local function setNoclip(enabled)
+    character = getCharacter()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not enabled
+        end
+    end
+end
+
+-- Fly Toggle
+local FlyToggle = HTab:CreateToggle({
+    Name = "Fly Toggle",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+    Callback = function(Value)
+        flyOn = Value
+        character = getCharacter()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+        if flyOn then
+            if humanoid then humanoid.PlatformStand = true end
+            if rootPart then
+                bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                bodyVelocity.Parent = rootPart
+
+                bodyGyro = Instance.new("BodyGyro")
+                bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+                bodyGyro.P = 1e4
+                bodyGyro.CFrame = rootPart.CFrame
+                bodyGyro.Parent = rootPart
+            end
+            setNoclip(true) -- Enable noclip when flying
+        else
+            if humanoid then humanoid.PlatformStand = false end
+            if bodyVelocity then
+                bodyVelocity:Destroy()
+                bodyVelocity = nil
+            end
+            if bodyGyro then
+                bodyGyro:Destroy()
+                bodyGyro = nil
+            end
+            setNoclip(false) -- Disable noclip when flying stops
+        end
+    end
+})
+
+-- Fly Speed Slider
+local FlySlider = HTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {10, 100},
+    Increment = 5,
+    Suffix = "Speed",
+    CurrentValue = 50,
+    Flag = "FlySpeed",
+    Callback = function(Value)
+        flySpeed = Value
+    end
+})
+
+-- Fly movement controls
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if flyOn then
+        if input.KeyCode == Enum.KeyCode.W then keysPressed["W"] = true end
+        if input.KeyCode == Enum.KeyCode.S then keysPressed["S"] = true end
+        if input.KeyCode == Enum.KeyCode.A then keysPressed["A"] = true end
+        if input.KeyCode == Enum.KeyCode.D then keysPressed["D"] = true end
+        if input.KeyCode == Enum.KeyCode.Space then keysPressed["Space"] = true end
+        if input.KeyCode == Enum.KeyCode.LeftShift then keysPressed["Shift"] = true end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if flyOn then
+        if input.KeyCode == Enum.KeyCode.W then keysPressed["W"] = false end
+        if input.KeyCode == Enum.KeyCode.S then keysPressed["S"] = false end
+        if input.KeyCode == Enum.KeyCode.A then keysPressed["A"] = false end
+        if input.KeyCode == Enum.KeyCode.D then keysPressed["D"] = false end
+        if input.KeyCode == Enum.KeyCode.Space then keysPressed["Space"] = false end
+        if input.KeyCode == Enum.KeyCode.LeftShift then keysPressed["Shift"] = false end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if flyOn and bodyVelocity and bodyGyro then
+        character = getCharacter()
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = character.HumanoidRootPart
+            local camera = Workspace.CurrentCamera
+            local moveVector = Vector3.new()
+
+            if keysPressed["W"] then moveVector = moveVector + camera.CFrame.LookVector end
+            if keysPressed["S"] then moveVector = moveVector - camera.CFrame.LookVector end
+            if keysPressed["A"] then moveVector = moveVector - camera.CFrame.RightVector end
+            if keysPressed["D"] then moveVector = moveVector + camera.CFrame.RightVector end
+
+            if moveVector.Magnitude > 0 then
+                moveVector = moveVector.Unit * flySpeed
+            end
+
+            -- Vertical movement
+            if keysPressed["Space"] then
+                moveVector = moveVector + Vector3.new(0, flySpeed, 0)
+            elseif keysPressed["Shift"] then
+                moveVector = moveVector - Vector3.new(0, flySpeed, 0)
+            end
+
+            bodyVelocity.Velocity = moveVector
+            bodyGyro.CFrame = camera.CFrame
+        end
+    end
+end)
+
+-- Handle character respawn
+game.Players.LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    if not flyOn then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if humanoid and rootPart then
+        humanoid.PlatformStand = true
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = rootPart
+
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        bodyGyro.P = 1e4
+        bodyGyro.CFrame = rootPart.CFrame
+        bodyGyro.Parent = rootPart
+        setNoclip(true) -- Re-enable noclip on respawn if flying
+    end
+end)
+
+
+-- Fly movement loop
+local RunService = game:GetService("RunService")
+RunService.RenderStepped:Connect(function()
+    if flyOn and rootPart then
+        local targetCFrame = waypoints[currentTarget]
+        local currentPos = rootPart.Position
+        local distance = (targetCFrame.Position - currentPos).Magnitude
+
+        if distance > 2 then
+            rootPart.CFrame = targetCFrame -- Instant teleport to target
+        else
+            if currentTarget == #waypoints then
+                currentTarget = 1
+                if (currentPos - zSwitchPosition.Position).Magnitude < 2 then
+                    isZMovement = true
+                else
+                    isZMovement = false
+                end
+            else
+                currentTarget = currentTarget + 1
+            end
+            rootPart.CFrame = waypoints[currentTarget] -- Move to next waypoint
+        end
+    end
+end)
+
+-- Handle character respawn
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    rootPart = character:WaitForChild("HumanoidRootPart")
+    if flyOn then
+        setNoclip(true)
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.PlatformStand = true end
+    end
+end)
+
+-- Walkspeed Slider
+local WalkspeedSlider = HTab:CreateSlider({
+    Name = "Walkspeed",
+    Range = {16, 64},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Flag = "WalkspeedSlider",
+    Callback = function(Value)
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.WalkSpeed = Value end
+    end,
+})
+
+local WalkspeedInput = HTab:CreateInput({
+    Name = "Custom Walkspeed",
+    CurrentValue = "",
+    PlaceholderText = "Input",
+    RemoveTextAfterFocusLost = true,
+    Flag = "WalkspeedInput",
+    Callback = function(Text)
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid and tonumber(Text) then humanoid.WalkSpeed = tonumber(Text) end
+    end,
+})
+
+-- JumpPower Slider
+local JumpPowerSlider = HTab:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 200},
+    Increment = 1,
+    Suffix = "Power",
+    CurrentValue = 50,
+    Flag = "JumpPowerSlider",
+    Callback = function(Value)
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.JumpPower = Value end
+    end,
+})
+
+local JumpPowerInput = HTab:CreateInput({
+    Name = "Custom JumpPower",
+    CurrentValue = "",
+    PlaceholderText = "Input",
+    RemoveTextAfterFocusLost = true,
+    Flag = "JumpPowerInput",
+    Callback = function(Text)
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid and tonumber(Text) then humanoid.JumpPower = tonumber(Text) end
+    end,
+})
+
+-- Noclip Toggle
+local noclipEnabled = false
+local noclipConnection = nil
+
+local NoclipToggle = HTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(Value)
+        noclipEnabled = Value
+        if Value then
+            noclipConnection = RunService.Stepped:Connect(function()
+                local char = character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+            if noclipConnection then
+                noclipConnection:Disconnect()
+                noclipConnection = nil
+            end
+            local char = character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end,
+})
+
+-- Invisibility Toggle
+local InvisibilityToggle = HTab:CreateToggle({
+    Name = "Invisibility",
+    CurrentValue = false,
+    Flag = "InvisibleToggle",
+    Callback = function(Value)
+        local char = character
+        if char then
+            for _, child in pairs(char:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    if Value then
+                        transparencyStates[child] = child.Transparency
+                        child.Transparency = 1
+                    else
+                        child.Transparency = transparencyStates[child] or 0
+                        transparencyStates[child] = nil
+                    end
+                    child.LocalTransparencyModifier = 0
+                    child.CastShadow = not Value
+                end
+                if child:IsA("Accessory") and child:FindFirstChild("Handle") then
+                    if Value then
+                        transparencyStates[child.Handle] = child.Handle.Transparency
+                        child.Handle.Transparency = 1
+                    else
+                        child.Handle.Transparency = transparencyStates[child.Handle] or 0
+                        transparencyStates[child.Handle] = nil
+                    end
+                    child.Handle.LocalTransparencyModifier = 0
+                end
+                if child:IsA("Decal") and child.Name == "face" then
+                    if Value then
+                        transparencyStates[child] = child.Transparency
+                        child.Transparency = 1
+                    else
+                        child.Transparency = transparencyStates[child] or 0
+                        transparencyStates[child] = nil
+                    end
+                end
+            end
+        end
+    end,
+})
+
+-- Infinite Jump Toggle
+local InfiniteJumpEnabled = false
+
+local InfiniteJumpToggle = HTab:CreateToggle({
+    Name = "Infinite Jump",
+    CurrentValue = false,
+    Flag = "InfiniteJumpToggle",
+    Callback = function(Value)
+        InfiniteJumpEnabled = Value
+        if InfiniteJumpEnabled then
+            local UserInputService = game:GetService("UserInputService")
+            UserInputService.JumpRequest:Connect(function()
+                if InfiniteJumpEnabled then
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    end
+                end
+            end)
+            print("Infinite Jump Enabled")
+        else
+            print("Infinite Jump Disabled")
+        end
+    end,
+})
+
+player.CharacterAdded:Connect(function()
+    InfiniteJumpEnabled = false
+end)
+
+local TpSection = HTab:CreateSection("Teleport")
+
+-- Tp To User Input
+local TpInput = HTab:CreateInput({
+    Name = "Tp To User",
+    CurrentValue = "",
+    PlaceholderText = "Username",
+    RemoveTextAfterFocusLost = true,
+    Flag = "TpToUserInput",
+    Callback = function(Text)
+        local username = string.lower(Text)
+        if username and username ~= "" then
+            local targetPlayer = nil
+            for _, player in ipairs(game.Players:GetPlayers()) do
+                if string.lower(player.Name) == username then
+                    targetPlayer = player
+                    break
+                end
+            end
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if root then
+                    root.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                    root.Anchored = true
+                    task.wait(0.1)
+                    root.Anchored = false
+                end
+            else
+                warn("Player not found or not loaded!")
+            end
+        else
+            warn("Please enter a username.")
+        end
+    end,
+})
+
+-- Auto Fade Toggle
+local AutoFadeToggle = HTab:CreateToggle({
+    Name = "Auto Fade Tiles",
+    CurrentValue = false,
+    Flag = "FlyLoopToggle",
+    Callback = function(Value)
+        flyOn = Value
+        character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if flyOn and humanoid and character:FindFirstChild("HumanoidRootPart") then
+            originalPosition = rootPart.CFrame -- Store original position
+            setNoclip(true)
+            humanoid.PlatformStand = true
+            currentTarget = 1
+            isZMovement = false
+            rootPart.CFrame = waypoints[currentTarget] -- Initial teleport
+			wait(0.05)
+        elseif not flyOn and humanoid and originalPosition then
+            setNoclip(false)
+            humanoid.PlatformStand = false
+            rootPart.CFrame = originalPosition -- Return to original position
+            originalPosition = nil
+        end
+    end
+})
+
+-- Auto Fade Speed Slider
+local AutoFadeSlider = HTab:CreateSlider({
+    Name = "Auto Fade Tiles Speed",
+    Range = {10, 250},
+    Increment = 5,
+    Suffix = "Speed",
+    CurrentValue = 50,
+    Flag = "FlySpeed",
+    Callback = function(Value)
+        flySpeed = Value
+    end
+})
