@@ -1112,3 +1112,152 @@ task.spawn(function()
    task.wait(0.34)
    BringAndAnchorAll()
 end)
+
+local player = game.Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local spectateEnabled = false
+local spectateSpeed = 50
+local spectatePosition = Vector3.new(0, 50, 0) -- Default starting position above map
+local spectateRotation = CFrame.new()
+local originalCameraType = camera.CameraType
+local originalMouseBehavior = UserInputService.MouseBehavior
+
+-- Store original character state
+local originalAnchors = {}
+
+local keys = {
+    W = 0,
+    A = 0,
+    S = 0,
+    D = 0,
+    Space = 0,
+    LeftShift = 0
+}
+
+-- Anchor/Unanchor character parts
+local function setCharacterAnchored(anchored)
+    local character = player.Character
+    if character then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                if anchored then
+                    originalAnchors[part] = part.Anchored
+                    part.Anchored = true
+                else
+                    part.Anchored = originalAnchors[part] or false
+                end
+            end
+        end
+        print("Character anchored set to", anchored, "at", os.date("%H:%M:%S", os.time()))
+    end
+end
+
+-- Toggle spectate mode
+local function toggleSpectate()
+    spectateEnabled = not spectateEnabled
+    if spectateEnabled then
+        print("Spectate ENABLED at", os.date("%H:%M:%S", os.time()))
+        originalCameraType = camera.CameraType
+        originalMouseBehavior = UserInputService.MouseBehavior
+        camera.CameraType = Enum.CameraType.Scriptable
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter -- Lock mouse in center
+        spectatePosition = camera.CFrame.Position
+        spectateRotation = camera.CFrame - camera.CFrame.Position
+        setCharacterAnchored(true) -- Anchor character
+    else
+        print("Spectate DISABLED at", os.date("%H:%M:%S", os.time()))
+        camera.CameraType = originalCameraType
+        UserInputService.MouseBehavior = originalMouseBehavior
+        setCharacterAnchored(false) -- Unanchor character
+    end
+end
+
+-- Handle input for movement
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        toggleSpectate()
+    elseif spectateEnabled then
+        local keyName = input.KeyCode.Name
+        if keys[keyName] ~= nil then
+            keys[keyName] = 1
+            print("Key pressed:", keyName, "Time:", os.date("%H:%M:%S", os.time()))
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if spectateEnabled then
+        local keyName = input.KeyCode.Name
+        if keys[keyName] ~= nil then
+            keys[keyName] = 0
+            print("Key released:", keyName, "Time:", os.date("%H:%M:%S", os.time()))
+        end
+    end
+end)
+
+-- Update camera position and rotation
+RunService.RenderStepped:Connect(function(deltaTime)
+    if spectateEnabled then
+        local moveDirection = Vector3.new(
+            keys.D - keys.A,
+            keys.Space - keys.LeftShift,
+            keys.S - keys.W
+        )
+
+        if moveDirection.Magnitude > 0 then
+            print("Move direction:", moveDirection, "Time:", os.date("%H:%M:%S", os.time()))
+            local cameraCFrame = CFrame.new(spectatePosition) * spectateRotation
+            local forwardVector = cameraCFrame.LookVector
+            local rightVector = cameraCFrame.RightVector
+
+            local moveVector = (forwardVector * moveDirection.Z + rightVector * moveDirection.X + Vector3.new(0, moveDirection.Y, 0)) * spectateSpeed * deltaTime
+            spectatePosition = spectatePosition + moveVector
+        end
+
+        -- Update rotation based on mouse movement
+        local mouseDelta = UserInputService:GetMouseDelta()
+        if mouseDelta.Magnitude > 0 then
+            print("Mouse delta:", mouseDelta, "Time:", os.date("%H:%M:%S", os.time()))
+            local rotationSpeed = 0.002
+            spectateRotation = spectateRotation * CFrame.Angles(0, -mouseDelta.X * rotationSpeed, 0) * CFrame.Angles(-mouseDelta.Y * rotationSpeed, 0, 0)
+
+            -- Clamp vertical rotation
+            local _, pitch, _ = spectateRotation:ToEulerAnglesXYZ()
+            if pitch > math.rad(85) then
+                spectateRotation = CFrame.fromEulerAnglesXYZ(math.rad(85), spectateRotation:ToEulerAnglesXYZ().y, 0)
+            elseif pitch < -math.rad(85) then
+                spectateRotation = CFrame.fromEulerAnglesXYZ(-math.rad(85), spectateRotation:ToEulerAnglesXYZ().y, 0)
+            end
+        end
+
+        -- Force camera update
+        camera.CFrame = CFrame.new(spectatePosition) * spectateRotation
+        print("Camera updated to:", camera.CFrame.Position, "Time:", os.date("%H:%M:%S", os.time()))
+    end
+end)
+
+-- Slider for spectate speed
+OTab:CreateSlider({
+    Name = "Spectate Speed",
+    Range = {10, 200},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 50,
+    Callback = function(value)
+        spectateSpeed = value
+        print("Spectate speed set to", value, "at", os.date("%H:%M:%S", os.time()))
+    end,
+}, SSec)
+
+-- Toggle button for spectate
+OTab:CreateToggle({
+    Name = "Enable Spectate",
+    CurrentValue = false,
+    Callback = function(value)
+        toggleSpectate()
+    end,
+}, SSec)
