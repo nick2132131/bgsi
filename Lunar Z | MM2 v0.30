@@ -268,132 +268,165 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HRP = Character:WaitForChild("HumanoidRootPart")
+local flyOn = false
+local bodyVelocity, bodyGyro
+local flySpeed = 50
+local keysPressed = {}
+local character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
 
-local flying = false
-local speed = 50 -- Default fly speed
-local bodyGyro
-local bodyVelocity
-
-local keys = {
-    W = false,
-    A = false,
-    S = false,
-    D = false,
-    Space = false,
-    LeftShift = false,
-}
-
--- Input listeners
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if keys[input.KeyCode.Name] ~= nil then
-        keys[input.KeyCode.Name] = true
+-- Function to safely get or wait for character
+local function getCharacter()
+    local currentChar = game.Players.LocalPlayer.Character
+    if not currentChar or not currentChar.Parent then
+        currentChar = game.Players.LocalPlayer.CharacterAdded:Wait()
     end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if keys[input.KeyCode.Name] ~= nil then
-        keys[input.KeyCode.Name] = false
-    end
-end)
-
--- Start flying
-local function startFlying()
-    if not Character or not HRP then return end
-
-    -- Clean up
-    pcall(function()
-        if bodyGyro then bodyGyro:Destroy() end
-        if bodyVelocity then bodyVelocity:Destroy() end
-    end)
-
-    bodyGyro = Instance.new("BodyGyro")
-    bodyGyro.P = 9e4
-    bodyGyro.Parent = HRP
-    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bodyGyro.CFrame = HRP.CFrame
-
-    bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.Velocity = Vector3.zero
-    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    bodyVelocity.Parent = HRP
+    return currentChar
 end
 
--- Stop flying
-local function stopFlying()
-    if bodyGyro then bodyGyro:Destroy() end
-    if bodyVelocity then bodyVelocity:Destroy() end
-
-    -- Restore collisions
-    if Character and Character.Parent then
-        for _, part in ipairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
+-- Function to enable/disable noclip
+local function setNoclip(enabled)
+    character = getCharacter()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not enabled
         end
     end
 end
 
--- Fly movement
-RunService.Heartbeat:Connect(function(deltaTime)
-    if flying and Character and HRP then
-        local cam = workspace.CurrentCamera
-        bodyGyro.CFrame = cam.CFrame
-
-        local moveVector = Vector3.zero
-        if keys.W then moveVector = moveVector + cam.CFrame.LookVector end
-        if keys.S then moveVector = moveVector - cam.CFrame.LookVector end
-        if keys.A then moveVector = moveVector - cam.CFrame.RightVector end
-        if keys.D then moveVector = moveVector + cam.CFrame.RightVector end
-        if keys.Space then moveVector = moveVector + Vector3.new(0,1,0) end
-        if keys.LeftShift then moveVector = moveVector - Vector3.new(0,1,0) end
-
-        if moveVector.Magnitude > 0 then
-            moveVector = moveVector.Unit
-        end
-        bodyVelocity.Velocity = moveVector * speed
-
-        -- Noclip
-        for _, part in ipairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
-        end
-    end
-end)
-
--- 🌟 Add to Rayfield
-
+-- Fly Toggle
 HTab:CreateToggle({
-    Name = "Fly",
+    Name = "Fly Toggle",
     CurrentValue = false,
+    Flag = "FlyToggle",
     Callback = function(Value)
-        flying = Value
-        if flying then
-            startFlying()
+        flyOn = Value
+        character = getCharacter()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+        if flyOn then
+            if humanoid then humanoid.PlatformStand = true end
+            if rootPart then
+                bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                bodyVelocity.Parent = rootPart
+
+                bodyGyro = Instance.new("BodyGyro")
+                bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+                bodyGyro.P = 1e4
+                bodyGyro.CFrame = rootPart.CFrame
+                bodyGyro.Parent = rootPart
+            end
+            setNoclip(true) -- Enable noclip when flying
         else
-            stopFlying()
+            if humanoid then humanoid.PlatformStand = false end
+            if bodyVelocity then
+                bodyVelocity:Destroy()
+                bodyVelocity = nil
+            end
+            if bodyGyro then
+                bodyGyro:Destroy()
+                bodyGyro = nil
+            end
+            setNoclip(false) -- Disable noclip when flying stops
         end
-    end,
+    end
 })
 
+-- Fly Speed Slider
 HTab:CreateSlider({
     Name = "Fly Speed",
-    Range = {10, 222},
-    Increment = 1,
-    Suffix = "Fly Speed",
-    CurrentValue = speed,
+    Range = {10, 100},
+    Increment = 5,
+    Suffix = "Speed",
+    CurrentValue = 50,
+    Flag = "FlySpeed",
     Callback = function(Value)
-        speed = Value
-    end,
+        flySpeed = Value
+    end
 })
+
+-- Fly movement controls
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if flyOn then
+        if input.KeyCode == Enum.KeyCode.W then keysPressed["W"] = true end
+        if input.KeyCode == Enum.KeyCode.S then keysPressed["S"] = true end
+        if input.KeyCode == Enum.KeyCode.A then keysPressed["A"] = true end
+        if input.KeyCode == Enum.KeyCode.D then keysPressed["D"] = true end
+        if input.KeyCode == Enum.KeyCode.Space then keysPressed["Space"] = true end
+        if input.KeyCode == Enum.KeyCode.LeftShift then keysPressed["Shift"] = true end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if flyOn then
+        if input.KeyCode == Enum.KeyCode.W then keysPressed["W"] = false end
+        if input.KeyCode == Enum.KeyCode.S then keysPressed["S"] = false end
+        if input.KeyCode == Enum.KeyCode.A then keysPressed["A"] = false end
+        if input.KeyCode == Enum.KeyCode.D then keysPressed["D"] = false end
+        if input.KeyCode == Enum.KeyCode.Space then keysPressed["Space"] = false end
+        if input.KeyCode == Enum.KeyCode.LeftShift then keysPressed["Shift"] = false end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if flyOn and bodyVelocity and bodyGyro then
+        character = getCharacter()
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = character.HumanoidRootPart
+            local camera = Workspace.CurrentCamera
+            local moveVector = Vector3.new()
+
+            if keysPressed["W"] then moveVector = moveVector + camera.CFrame.LookVector end
+            if keysPressed["S"] then moveVector = moveVector - camera.CFrame.LookVector end
+            if keysPressed["A"] then moveVector = moveVector - camera.CFrame.RightVector end
+            if keysPressed["D"] then moveVector = moveVector + camera.CFrame.RightVector end
+
+            if moveVector.Magnitude > 0 then
+                moveVector = moveVector.Unit * flySpeed
+            end
+
+            -- Vertical movement
+            if keysPressed["Space"] then
+                moveVector = moveVector + Vector3.new(0, flySpeed, 0)
+            elseif keysPressed["Shift"] then
+                moveVector = moveVector - Vector3.new(0, flySpeed, 0)
+            end
+
+            bodyVelocity.Velocity = moveVector
+            bodyGyro.CFrame = camera.CFrame
+        end
+    end
+end)
+
+-- Handle character respawn
+game.Players.LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    if not flyOn then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if humanoid and rootPart then
+        humanoid.PlatformStand = true
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = rootPart
+
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        bodyGyro.P = 1e4
+        bodyGyro.CFrame = rootPart.CFrame
+        bodyGyro.Parent = rootPart
+        setNoclip(true) -- Re-enable noclip on respawn if flying
+    end
+end)
 
 --// Services
 local Workspace = game:GetService("Workspace")
@@ -1112,152 +1145,3 @@ task.spawn(function()
    task.wait(0.34)
    BringAndAnchorAll()
 end)
-
-local player = game.Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-
-local spectateEnabled = false
-local spectateSpeed = 50
-local spectatePosition = Vector3.new(0, 50, 0) -- Default starting position above map
-local spectateRotation = CFrame.new()
-local originalCameraType = camera.CameraType
-local originalMouseBehavior = UserInputService.MouseBehavior
-
--- Store original character state
-local originalAnchors = {}
-
-local keys = {
-    W = 0,
-    A = 0,
-    S = 0,
-    D = 0,
-    Space = 0,
-    LeftShift = 0
-}
-
--- Anchor/Unanchor character parts
-local function setCharacterAnchored(anchored)
-    local character = player.Character
-    if character then
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                if anchored then
-                    originalAnchors[part] = part.Anchored
-                    part.Anchored = true
-                else
-                    part.Anchored = originalAnchors[part] or false
-                end
-            end
-        end
-        print("Character anchored set to", anchored, "at", os.date("%H:%M:%S", os.time()))
-    end
-end
-
--- Toggle spectate mode
-local function toggleSpectate()
-    spectateEnabled = not spectateEnabled
-    if spectateEnabled then
-        print("Spectate ENABLED at", os.date("%H:%M:%S", os.time()))
-        originalCameraType = camera.CameraType
-        originalMouseBehavior = UserInputService.MouseBehavior
-        camera.CameraType = Enum.CameraType.Scriptable
-        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter -- Lock mouse in center
-        spectatePosition = camera.CFrame.Position
-        spectateRotation = camera.CFrame - camera.CFrame.Position
-        setCharacterAnchored(true) -- Anchor character
-    else
-        print("Spectate DISABLED at", os.date("%H:%M:%S", os.time()))
-        camera.CameraType = originalCameraType
-        UserInputService.MouseBehavior = originalMouseBehavior
-        setCharacterAnchored(false) -- Unanchor character
-    end
-end
-
--- Handle input for movement
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F then
-        toggleSpectate()
-    elseif spectateEnabled then
-        local keyName = input.KeyCode.Name
-        if keys[keyName] ~= nil then
-            keys[keyName] = 1
-            print("Key pressed:", keyName, "Time:", os.date("%H:%M:%S", os.time()))
-        end
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if spectateEnabled then
-        local keyName = input.KeyCode.Name
-        if keys[keyName] ~= nil then
-            keys[keyName] = 0
-            print("Key released:", keyName, "Time:", os.date("%H:%M:%S", os.time()))
-        end
-    end
-end)
-
--- Update camera position and rotation
-RunService.RenderStepped:Connect(function(deltaTime)
-    if spectateEnabled then
-        local moveDirection = Vector3.new(
-            keys.D - keys.A,
-            keys.Space - keys.LeftShift,
-            keys.S - keys.W
-        )
-
-        if moveDirection.Magnitude > 0 then
-            print("Move direction:", moveDirection, "Time:", os.date("%H:%M:%S", os.time()))
-            local cameraCFrame = CFrame.new(spectatePosition) * spectateRotation
-            local forwardVector = cameraCFrame.LookVector
-            local rightVector = cameraCFrame.RightVector
-
-            local moveVector = (forwardVector * moveDirection.Z + rightVector * moveDirection.X + Vector3.new(0, moveDirection.Y, 0)) * spectateSpeed * deltaTime
-            spectatePosition = spectatePosition + moveVector
-        end
-
-        -- Update rotation based on mouse movement
-        local mouseDelta = UserInputService:GetMouseDelta()
-        if mouseDelta.Magnitude > 0 then
-            print("Mouse delta:", mouseDelta, "Time:", os.date("%H:%M:%S", os.time()))
-            local rotationSpeed = 0.002
-            spectateRotation = spectateRotation * CFrame.Angles(0, -mouseDelta.X * rotationSpeed, 0) * CFrame.Angles(-mouseDelta.Y * rotationSpeed, 0, 0)
-
-            -- Clamp vertical rotation
-            local _, pitch, _ = spectateRotation:ToEulerAnglesXYZ()
-            if pitch > math.rad(85) then
-                spectateRotation = CFrame.fromEulerAnglesXYZ(math.rad(85), spectateRotation:ToEulerAnglesXYZ().y, 0)
-            elseif pitch < -math.rad(85) then
-                spectateRotation = CFrame.fromEulerAnglesXYZ(-math.rad(85), spectateRotation:ToEulerAnglesXYZ().y, 0)
-            end
-        end
-
-        -- Force camera update
-        camera.CFrame = CFrame.new(spectatePosition) * spectateRotation
-        print("Camera updated to:", camera.CFrame.Position, "Time:", os.date("%H:%M:%S", os.time()))
-    end
-end)
-
--- Slider for spectate speed
-OTab:CreateSlider({
-    Name = "Spectate Speed",
-    Range = {10, 200},
-    Increment = 1,
-    Suffix = "Speed",
-    CurrentValue = 50,
-    Callback = function(value)
-        spectateSpeed = value
-        print("Spectate speed set to", value, "at", os.date("%H:%M:%S", os.time()))
-    end,
-}, SSec)
-
--- Toggle button for spectate
-OTab:CreateToggle({
-    Name = "Enable Spectate",
-    CurrentValue = false,
-    Callback = function(value)
-        toggleSpectate()
-    end,
-}, SSec)
