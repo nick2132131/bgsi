@@ -42,6 +42,7 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local flyOn = false
 local fly = false
 local flySpeed = 50
+local flyspeed2 = 50
 local currentTarget = 1
 local isZMovement = false
 local originalPosition = nil
@@ -552,6 +553,6 @@ local AutoFadeSlider = HTab:CreateSlider({
     CurrentValue = 50,
     Flag = "FlySpeed",
     Callback = function(Value)
-        flySpeed = Value
+        flySpeed2 = Value
     end
 })
