@@ -96,8 +96,37 @@ local function setNoclip(enabled)
     end
 end
 
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local flyOn = false
+local bodyVelocity, bodyGyro
+local flySpeed = 50
+local keysPressed = {}
+local character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+
+-- Function to safely get or wait for character
+local function getCharacter()
+    local currentChar = game.Players.LocalPlayer.Character
+    if not currentChar or not currentChar.Parent then
+        currentChar = game.Players.LocalPlayer.CharacterAdded:Wait()
+    end
+    return currentChar
+end
+
+-- Function to enable/disable noclip
+local function setNoclip(enabled)
+    character = getCharacter()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not enabled
+        end
+    end
+end
+
 -- Fly Toggle
-local FlyToggle = HTab:CreateToggle({
+HTab:CreateToggle({
     Name = "Fly Toggle",
     CurrentValue = false,
     Flag = "FlyToggle",
@@ -138,13 +167,13 @@ local FlyToggle = HTab:CreateToggle({
 })
 
 -- Fly Speed Slider
-local FlySlider = HTab:CreateSlider({
+HTab:CreateSlider({
     Name = "Fly Speed",
     Range = {10, 100},
     Increment = 5,
     Suffix = "Speed",
     CurrentValue = 50,
-    Flag = "FlySpeed",
+    Flag = "FlySpeed1",
     Callback = function(Value)
         flySpeed = Value
     end
@@ -224,44 +253,6 @@ game.Players.LocalPlayer.CharacterAdded:Connect(function(newCharacter)
         bodyGyro.CFrame = rootPart.CFrame
         bodyGyro.Parent = rootPart
         setNoclip(true) -- Re-enable noclip on respawn if flying
-    end
-end)
-
-
--- Fly movement loop
-local RunService = game:GetService("RunService")
-RunService.RenderStepped:Connect(function()
-    if flyOn and rootPart then
-        local targetCFrame = waypoints[currentTarget]
-        local currentPos = rootPart.Position
-        local distance = (targetCFrame.Position - currentPos).Magnitude
-
-        if distance > 2 then
-            rootPart.CFrame = targetCFrame -- Instant teleport to target
-        else
-            if currentTarget == #waypoints then
-                currentTarget = 1
-                if (currentPos - zSwitchPosition.Position).Magnitude < 2 then
-                    isZMovement = true
-                else
-                    isZMovement = false
-                end
-            else
-                currentTarget = currentTarget + 1
-            end
-            rootPart.CFrame = waypoints[currentTarget] -- Move to next waypoint
-        end
-    end
-end)
-
--- Handle character respawn
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    rootPart = character:WaitForChild("HumanoidRootPart")
-    if flyOn then
-        setNoclip(true)
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then humanoid.PlatformStand = true end
     end
 end)
 
