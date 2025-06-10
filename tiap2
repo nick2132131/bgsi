@@ -55,7 +55,7 @@ local waypoints = {
     CFrame.new(-45.2857819, 143.646286, -81.2006226),
 	CFrame.new(-78.8164291381836, 145.16867065429688, -81.17121124267578)
 }
-local zSwitchPosition = CFrame.new(-78.7858582, 143.646286, -63.2007141)
+local zSwitchPosition = CFrame.new(-78.78585815429688, 143.6462860107422, -63.200714111328125)
 
 -- Function to enable/disable noclip
 local function setNoclip(enabled)
