@@ -50,7 +50,7 @@ local transparencyStates = {} -- Table to store original transparencies
 local waypoints = {
     CFrame.new(-23.2857819, 143.646286, -81.2006226),
     CFrame.new(-34.2857819, 143.646286, -81.2006226),
-    CFrame.new(-45.2857819, 143.646286, -81.2006226)
+    CFrame.new(-45.2857819, 143.646286, -81.2006226),
 	CFrame.new(-78.8164291381836, 145.16867065429688, -81.17121124267578)
 }
 local zSwitchPosition = CFrame.new(-78.7858582, 143.646286, -63.2007141)
