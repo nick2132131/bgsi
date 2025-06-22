@@ -187,8 +187,10 @@ end)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
 local Tracers = {}
 local tracerESPEnabled = false
@@ -221,27 +223,18 @@ HTab:CreateToggle({
 
 -- Update loop
 RunService.RenderStepped:Connect(function()
-	local localChar = LocalPlayer.Character
-	local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
-
-	if not tracerESPEnabled or not localHRP then
+	if not tracerESPEnabled then
 		for _, v in pairs(Tracers) do
 			v.Visible = false
 		end
 		return
 	end
 
+	local mousePos = UserInputService:GetMouseLocation()
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 			local targetHRP = player.Character.HumanoidRootPart
-			local screenPos, onScreen = Camera:WorldToViewportPoint(targetHRP.Position)
-
-			if not onScreen or screenPos.Z < 0 then
-				if Tracers[player] then
-					Tracers[player].Visible = false
-				end
-				continue
-			end
+			local screenPos = Camera:WorldToViewportPoint(targetHRP.Position)
 
 			if not Tracers[player] then
 				local line = Drawing.new("Line")
@@ -253,11 +246,8 @@ RunService.RenderStepped:Connect(function()
 			local role = GetRole(player)
 			local color = RoleColors[role] or Color3.new(1, 1, 1)
 
-			local fromScreen = Camera:WorldToViewportPoint(localHRP.Position)
-			local toScreen = Camera:WorldToViewportPoint(targetHRP.Position)
-
-			Tracers[player].From = Vector2.new(fromScreen.X, fromScreen.Y)
-			Tracers[player].To = Vector2.new(toScreen.X, toScreen.Y)
+			Tracers[player].From = Vector2.new(mousePos.X, mousePos.Y)
+			Tracers[player].To = Vector2.new(screenPos.X, screenPos.Y)
 			Tracers[player].Color = color
 			Tracers[player].Visible = true
 		else
@@ -267,6 +257,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 end)
+
 
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
