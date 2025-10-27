@@ -1274,8 +1274,6 @@ JoinRandomBtn.TextXAlignment = Enum.TextXAlignment.Left
 
 UICorner_63.Parent = JoinRandomBtn
 
--- Scripts:
-
 local function ALCHX_fake_script() -- Visuals.Drag 
 	local script = Instance.new('LocalScript', Visuals)
 
@@ -3703,26 +3701,20 @@ local function VVDXHFR_fake_script() -- TeleportDD.LocalScript
 	end)
 end
 coroutine.wrap(VVDXHFR_fake_script)()
-local function YEJTJJ_fake_script() -- GunDropStatus.GunDropStatusScript 
+local function GunDropStatusScript()
 	local script = Instance.new('LocalScript', GunDropStatus)
 
 	local Workspace = game:GetService("Workspace")
-	local RunService = game:GetService("RunService")
-	
 	local parent = script.Parent
+
 	local greenColor = Color3.fromRGB(0, 255, 0)
 	local redColor = Color3.fromRGB(255, 0, 0)
-	
-	local function checkGunDrop()
-		local gunDropFound = false
-		for _, descendant in pairs(Workspace:GetDescendants()) do
-			if descendant.Name == "GunDrop" and descendant:IsA("Model") then
-				gunDropFound = true
-				break
-			end
-		end
-	
-		if gunDropFound then
+
+	local gunDropExists = false
+
+	-- Efficient single check
+	local function updateStatus(found)
+		if found then
 			parent.Text = "Gun Drop Status: Available"
 			parent.TextColor3 = greenColor
 		else
@@ -3730,17 +3722,39 @@ local function YEJTJJ_fake_script() -- GunDropStatus.GunDropStatusScript
 			parent.TextColor3 = redColor
 		end
 	end
-	
-	checkGunDrop()
-	
-	RunService.Heartbeat:Connect(function()
-		checkGunDrop()
+
+	local function findGunDrop()
+		for _, descendant in ipairs(Workspace:GetChildren()) do
+			if descendant.Name == "GunDrop" and descendant:IsA("Model") then
+				return true
+			end
+		end
+		return false
+	end
+
+	-- Initial check
+	gunDropExists = findGunDrop()
+	updateStatus(gunDropExists)
+
+	-- Only react to new or removed descendants
+	Workspace.DescendantAdded:Connect(function(desc)
+		if desc.Name == "GunDrop" and desc:IsA("Model") then
+			if not gunDropExists then
+				gunDropExists = true
+				updateStatus(true)
+			end
+		end
 	end)
-	
-	Workspace.DescendantAdded:Connect(checkGunDrop)
-	Workspace.DescendantRemoving:Connect(checkGunDrop)
+
+	Workspace.DescendantRemoving:Connect(function(desc)
+		if desc.Name == "GunDrop" and desc:IsA("Model") then
+			task.wait() -- short delay to ensure removal processed
+			gunDropExists = findGunDrop()
+			updateStatus(gunDropExists)
+		end
+	end)
 end
-coroutine.wrap(YEJTJJ_fake_script)()
+coroutine.wrap(GunDropStatusScript)()
 local function NZFJFC_fake_script() -- UserTp.UserTpScript 
 	local script = Instance.new('LocalScript', UserTp)
 
