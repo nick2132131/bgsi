@@ -2351,110 +2351,113 @@ local function FZUX_fake_script() -- InfiniteJump.LocalScript
 	end)
 end
 coroutine.wrap(FZUX_fake_script)()
-local function AWVUYKJ_fake_script() -- GodMode.GodModeScript 
+local function GodModeScript()
 	local script = Instance.new('LocalScript', GodMode)
 
 	local Players = game:GetService("Players")
 	local LocalPlayer = Players.LocalPlayer
-	
+
 	local MaxHealth = math.huge
-	local Health = math.huge -1
-	
+	local Health = math.huge - 1
+
 	local button = script.Parent
 	local frame = button:WaitForChild("Frame")
 	local originalColor = frame.BackgroundColor3
 	local godmodeColor = Color3.new(0.0313725, 0.772549, 0.0784314)
+
 	local godmodeEnabled = false
 	local healthConnection
-	local godmodeTask
 	local forcefield
-	
+	local loopThread -- store the running thread for proper stop control
+
 	local function enableGodmode(character)
 		local humanoid = character:WaitForChild("Humanoid", 5)
 		if not humanoid then return end
-	
+
 		humanoid.MaxHealth = MaxHealth
 		humanoid.Health = Health
-	
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+
 		if healthConnection then
 			healthConnection:Disconnect()
 		end
-	
+
 		healthConnection = humanoid.HealthChanged:Connect(function(health)
 			if health < humanoid.MaxHealth then
-				humanoid.Health = MaxHealth
+				humanoid.Health = humanoid.MaxHealth
 			end
 		end)
-	
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-	
-		-- Add forcefield for extra protection
+
 		if not forcefield then
 			forcefield = Instance.new("ForceField")
 			forcefield.Visible = false
 			forcefield.Parent = character
 		end
-	
-		if not godmodeTask then
-			godmodeTask = task.spawn(function()
-				while godmodeEnabled do
-					if humanoid and humanoid.Health < humanoid.MaxHealth then
-						humanoid.Health = MaxHealth
-					end
-					task.wait(0.01) -- Increased frequency to 100 times per second
-				end
-			end)
+
+		-- start loop safely
+		if loopThread then
+			coroutine.close(loopThread)
+			loopThread = nil
 		end
+
+		loopThread = coroutine.create(function()
+			while godmodeEnabled and humanoid and humanoid.Parent do
+				if humanoid.Health < humanoid.MaxHealth then
+					humanoid.Health = humanoid.MaxHealth
+				end
+				task.wait(0.05)
+			end
+		end)
+		coroutine.resume(loopThread)
 	end
-	
+
 	local function disableGodmode(character)
-		local humanoid = character:WaitForChild("Humanoid", 5)
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if not humanoid then return end
-	
+
 		humanoid.MaxHealth = 100
 		humanoid.Health = 100
-	
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+
 		if healthConnection then
 			healthConnection:Disconnect()
 			healthConnection = nil
 		end
-	
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-	
+
 		if forcefield then
 			forcefield:Destroy()
 			forcefield = nil
 		end
-	
-		if godmodeTask then
-			task.cancel(godmodeTask)
-			godmodeTask = nil
+
+		if loopThread then
+			coroutine.close(loopThread)
+			loopThread = nil
 		end
 	end
-	
+
 	button.MouseButton1Click:Connect(function()
 		godmodeEnabled = not godmodeEnabled
 		frame.BackgroundColor3 = godmodeEnabled and godmodeColor or originalColor
-	
+
 		local character = LocalPlayer.Character
 		if not character then return end
-	
+
 		if godmodeEnabled then
 			enableGodmode(character)
 		else
 			disableGodmode(character)
 		end
 	end)
-	
+
 	LocalPlayer.CharacterAdded:Connect(function(character)
 		if godmodeEnabled then
 			enableGodmode(character)
-		else
-			return
 		end
 	end)
 end
-coroutine.wrap(AWVUYKJ_fake_script)()
+
+coroutine.wrap(GodModeScript)()
+
 local function LEJXRI_fake_script() -- FlyBtn.FlyScript 
 	local script = Instance.new('LocalScript', FlyBtn)
 
@@ -2745,25 +2748,27 @@ local function IEOZ_fake_script() -- NoClip.NoClipScript
 
 	local RunService = game:GetService("RunService")
 	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
 	
-	local player = Players.LocalPlayer
-	local character = player.Character or player.CharacterAdded:Wait()
+	local button = script.Parent
+	local frame = button:WaitForChild("Frame")
+	local activeColor = Color3.new(0.0313725, 0.772549, 0.0784314)
+	local inactiveColor = frame.BackgroundColor3 -- Store initial color once
 	local noclipOn = false
 	local connection = nil
-	local modifiedParts = {} -- Track parts with modified CanCollide
+	local modifiedParts = {}
 	
-	local function getCharacter()
-		return player.Character or player.CharacterAdded:Wait()
-	end
-	
-	local function startNoclip()
-		if connection then connection:Disconnect() end
-		local char = getCharacter()
-		if not char then return end
-	
+	local function startNoclip(character)
+		if not character then return end
+		if connection then
+			connection:Disconnect()
+			connection = nil
+		end
+		
+		modifiedParts = {} -- Clear previous parts
 		connection = RunService.Stepped:Connect(function()
-			for _, part in pairs(char:GetDescendants()) do
-				if part:IsA("BasePart") and part.CanCollide then
+			for _, part in ipairs(character:GetDescendants()) do
+				if part:IsA("BasePart") and part.CanCollide and not modifiedParts[part] then
 					part.CanCollide = false
 					modifiedParts[part] = true
 				end
@@ -2771,16 +2776,13 @@ local function IEOZ_fake_script() -- NoClip.NoClipScript
 		end)
 	end
 	
-	local function stopNoclip()
+	local function stopNoclip(character)
 		if connection then
 			connection:Disconnect()
 			connection = nil
 		end
-		local char = getCharacter()
-		if not char then return end
-	
 		for part in pairs(modifiedParts) do
-			if part:IsA("BasePart") and part.Parent == char then
+			if part:IsA("BasePart") and part.Parent then
 				part.CanCollide = true
 			end
 		end
@@ -2789,26 +2791,60 @@ local function IEOZ_fake_script() -- NoClip.NoClipScript
 	
 	local function toggleNoclip()
 		noclipOn = not noclipOn
-		local frame = script.Parent:WaitForChild("Frame")
-		local originalColor = frame.BackgroundColor3
-		local onColor = Color3.new(0.0313725, 0.772549, 0.0784314)
-		frame.BackgroundColor3 = noclipOn and onColor or originalColor
-	
+		frame.BackgroundColor3 = noclipOn and activeColor or inactiveColor
+		
+		local character = LocalPlayer.Character
 		if noclipOn then
-			startNoclip()
+			if character then
+				startNoclip(character)
+			end
 		else
-			stopNoclip()
+			if character then
+				stopNoclip(character)
+			end
 		end
 	end
 	
-	script.Parent.MouseButton1Click:Connect(toggleNoclip)
+	-- Connect button
+	local clickConnection = button.MouseButton1Click:Connect(toggleNoclip)
 	
-	-- Handle respawn
-	player.CharacterAdded:Connect(function(newChar)
-		character = newChar
+	-- Handle character respawn
+	if LocalPlayer.Character then
 		if noclipOn then
-			task.wait(1) -- Wait for character to fully load
-			startNoclip()
+			startNoclip(LocalPlayer.Character)
+		end
+	end
+	
+	LocalPlayer.CharacterAdded:Connect(function(character)
+		character:WaitForChild("Humanoid", 5) -- Ensure character is fully loaded
+		if noclipOn then
+			startNoclip(character)
+		else
+			stopNoclip(character) -- Ensure no lingering noclip state
+		end
+	end)
+	
+	-- Cleanup on part removal
+	LocalPlayer.CharacterRemoving:Connect(function(character)
+		stopNoclip(character) -- Reset collision on character removal
+	end)
+	
+	-- Cleanup on script destruction
+	script.AncestryChanged:Connect(function()
+		if not script.Parent then
+			if noclipOn then
+				noclipOn = false
+				local character = LocalPlayer.Character
+				if character then
+					stopNoclip(character)
+				end
+			end
+			if connection then
+				connection:Disconnect()
+				connection = nil
+			end
+			clickConnection:Disconnect()
+			modifiedParts = {}
 		end
 	end)
 end
@@ -2944,16 +2980,37 @@ coroutine.wrap(DBTG_fake_script)()
 local function BSRFC_fake_script() -- Reset.ResetScript 
 	local script = Instance.new('LocalScript', Reset)
 
-	local player = game.Players.LocalPlayer
-	local char = player.Character or player.CharacterAdded:Wait()
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
 	
-	if char then
-		local humanoid = char:WaitForChild("Humanoid", 1)
+	local button = script.Parent
+	
+	local function resetCharacter()
+		local character = LocalPlayer.Character
+		if character then
+			local humanoid = character:FindFirstChild("Humanoid")
+			if humanoid then
+				humanoid.Health = 0
+			end
+		end
 	end
 	
-	script.Parent.MouseButton1Click:Connect(function()
-		if char:FindFirstChild("Humanoid") then
-			char.Humanoid.Health = 0
+	-- Store connection for cleanup
+	local clickConnection = button.MouseButton1Click:Connect(resetCharacter)
+	
+	-- Handle character respawn
+	LocalPlayer.CharacterAdded:Connect(function(character)
+		-- Ensure the humanoid is available before attempting reset
+		local humanoid = character:WaitForChild("Humanoid", 5)
+		if not humanoid then
+			warn("Humanoid not found for character after respawn")
+		end
+	end)
+	
+	-- Cleanup on script destruction
+	script.AncestryChanged:Connect(function()
+		if not script.Parent then
+			clickConnection:Disconnect()
 		end
 	end)
 end
