@@ -4160,68 +4160,96 @@ local function EMUNGC_fake_script() -- OtherDD.LocalScript
 	end)
 end
 coroutine.wrap(EMUNGC_fake_script)()
-local function ServerTeleportScript() -- ServerTeleport.Script 
-	local script = Instance.new('LocalScript', ServerLabel) -- Adjust to target UI parent (ServerLabel or JoinRandomBtn)
+-- // Auto Reload + ServerHop / Rejoin Script // --
 
-	local TeleportService = game:GetService("TeleportService")
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
-	local placeId = game.PlaceId
-	local jobId = game.JobId
-	
-	local randomServerButton = script.Parent:WaitForChild("JoinRandomBtn")
-	local rejoinServerButton = script.Parent:WaitForChild("RjBtn", 1) or script.Parent -- Fallback to parent if RjBtn not found
-	
-	local function joinRandomServer()
-		local success, result = pcall(function()
-			TeleportService:Teleport(placeId, LocalPlayer)
-		end)
-		if not success then
-			warn("Failed to join random server: " .. tostring(result))
-			game.StarterGui:SetCore("SendNotification", {
-				Title = "Teleport Error",
-				Text = "Failed to join random server: " .. tostring(result),
-				Duration = 5
-			})
-		end
-	end
-	
-	local function rejoinServer()
-		if jobId == "" then
-			warn("Cannot rejoin: This is a local or reserved server.")
-			game.StarterGui:SetCore("SendNotification", {
-				Title = "Rejoin Error",
-				Text = "Cannot rejoin: This is a local or reserved server.",
-				Duration = 5
-			})
-			return
-		end
-		local success, result = pcall(function()
-			TeleportService:TeleportToPlaceInstance(placeId, jobId, LocalPlayer)
-		end)
-		if not success then
-			warn("Failed to rejoin server: " .. tostring(result))
-			game.StarterGui:SetCore("SendNotification", {
-				Title = "Rejoin Error",
-				Text = "Failed to rejoin server: " .. tostring(result),
-				Duration = 5
-			})
-		end
-	end
-	
-	-- Store connections for cleanup
-	local connections = {}
-	table.insert(connections, randomServerButton.MouseButton1Click:Connect(joinRandomServer))
-	table.insert(connections, rejoinServerButton.MouseButton1Click:Connect(rejoinServer))
-	
-	-- Cleanup on script destruction
-	script.AncestryChanged:Connect(function()
-		if not script.Parent then
-			for _, conn in ipairs(connections) do
-				conn:Disconnect()
-			end
-			connections = {}
-		end
-	end)
+local function ServerTeleportScript()
+    local script = Instance.new('LocalScript', ServerLabel) -- adjust to your UI parent
+
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local placeId = game.PlaceId
+    local jobId = game.JobId
+
+    local randomServerButton = script.Parent:WaitForChild("JoinRandomBtn")
+    local rejoinServerButton = script.Parent:WaitForChild("RjBtn", 1) or script.Parent
+
+    -- // Reload on teleport //
+    TeleportService.TeleportInitFailed:Connect(function()
+        task.wait(5)
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/nick2132131/bgsi/refs/heads/main/mm2"))()
+        end)
+    end)
+
+    -- // Auto-queue your script on teleport //
+    local function queueReload()
+        local queued = [[
+            task.wait(5)
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/nick2132131/bgsi/refs/heads/main/mm2"))()
+        ]]
+        if syn and syn.queue_on_teleport then
+            syn.queue_on_teleport(queued)
+        elseif queue_on_teleport then
+            queue_on_teleport(queued)
+        elseif fluxus and fluxus.queue_on_teleport then
+            fluxus.queue_on_teleport(queued)
+        end
+    end
+
+    -- // Buttons //
+    local function joinRandomServer()
+        queueReload()
+        local success, result = pcall(function()
+            TeleportService:Teleport(placeId, LocalPlayer)
+        end)
+        if not success then
+            warn("Failed to join random server: " .. tostring(result))
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Teleport Error",
+                Text = tostring(result),
+                Duration = 5
+            })
+        end
+    end
+
+    local function rejoinServer()
+        if jobId == "" then
+            warn("Cannot rejoin: This is a local or reserved server.")
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Rejoin Error",
+                Text = "Cannot rejoin: local/reserved server.",
+                Duration = 5
+            })
+            return
+        end
+        queueReload()
+        local success, result = pcall(function()
+            TeleportService:TeleportToPlaceInstance(placeId, jobId, LocalPlayer)
+        end)
+        if not success then
+            warn("Failed to rejoin server: " .. tostring(result))
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Rejoin Error",
+                Text = tostring(result),
+                Duration = 5
+            })
+        end
+    end
+
+    -- // Connections //
+    local connections = {}
+    table.insert(connections, randomServerButton.MouseButton1Click:Connect(joinRandomServer))
+    table.insert(connections, rejoinServerButton.MouseButton1Click:Connect(rejoinServer))
+
+    -- // Cleanup //
+    script.AncestryChanged:Connect(function()
+        if not script.Parent then
+            for _, conn in ipairs(connections) do
+                conn:Disconnect()
+            end
+        end
+    end)
 end
+
 coroutine.wrap(ServerTeleportScript)()
